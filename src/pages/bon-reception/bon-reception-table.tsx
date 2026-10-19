@@ -37,6 +37,9 @@ import {
   UserRound,
   X,
   XCircle,
+  Scale,
+  Factory,
+  CreditCard,
 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
@@ -252,10 +255,7 @@ const confirmerSuppression = async () => {
      FILTRE STATUT
   ========================================================== */
 
-  const [statusFilter, setStatusFilter] =
-    useState(
-      'Tous les statuts',
-    );
+  const [statusFilter, setStatusFilter] = useState('Tous');
 
 
   /* ==========================================================
@@ -349,6 +349,21 @@ const confirmerSuppression = async () => {
         'Annulé',
     ).length;
 
+  const statusCounts = useMemo(() => {
+   const count = (status: string) =>
+    bons.filter((bon) => bon.statusLib === status).length;
+
+   return [
+    { label: 'Tous', count: bons.length },
+    { label: 'Non Affecté', count: count('Non Affecté') },
+    { label: 'Non Pesé', count: count('Non Pesé') },
+    { label: 'En Attente', count: count('En Attente') },
+    { label: 'Fin Prod', count: count('Fin Prod') },
+    { label: 'Non Payé', count: count('Non Payé') },
+    { label: 'Validé', count: count('Validé') },
+   ];
+  }, [bons]);
+
 
   /* ==========================================================
      FILTRAGE
@@ -391,10 +406,10 @@ const confirmerSuppression = async () => {
     });
   }
 
-  if (statusFilter !== 'Tous les statuts') {
-    result = result.filter(
-      (bon) => bon.statusLib === statusFilter
-    );
+  if (statusFilter !== 'Tous') {
+   result = result.filter(
+    (bon) => bon.statusLib === statusFilter,
+   );
   }
 
   return result;
@@ -406,12 +421,12 @@ const confirmerSuppression = async () => {
   ========================================================== */
 
   const handleReset = () => {
-  setDateDebut('');
-  setDateFin('');
-  setStatusFilter('Tous les statuts');
+    setDateDebut('');
+    setDateFin('');
+    setStatusFilter('Tous les statuts');
 
-  gridApiRef.current?.setFilterModel(null);
-};
+    gridApiRef.current?.setFilterModel(null);
+  };
 
 
   /* ==========================================================
@@ -1025,70 +1040,7 @@ const confirmerSuppression = async () => {
         },
 
 
-        /* ====================================================
-           HISTORIQUE
-        ==================================================== */
-
-        {
-          colId:
-            'history',
-
-          headerName:
-            'Historique',
-
-          width:
-            90,
-
-          minWidth:
-            90,
-
-          maxWidth:
-            90,
-
-          pinned:
-            'right',
-
-          sortable:
-            false,
-
-          filter:
-            false,
-
-          resizable:
-            false,
-
-          cellRenderer: (
-            params:
-              ICellRendererParams<BonReception>,
-          ) => {
-
-            if (!params.data) {
-              return null;
-            }
-
-            return (
-
-              <div className="flex h-full items-center justify-center">
-
-                <button
-                  type="button"
-                  title="Voir l'historique du compte"
-                  onClick={() =>
-                    setHistoryCompteId(
-                      params.data!.compteId,
-                    )
-                  }
-                  className="flex size-9 items-center justify-center rounded-lg bg-[#e8f1ff] text-[#2563eb] transition hover:bg-[#dbeafe]"
-                >
-
-                  <History className="size-[17px]" />
-
-                </button>
-
-              </div>
-            );
-          },
-        },
+        
 
       ],
 
@@ -1377,8 +1329,9 @@ const confirmerSuppression = async () => {
 
 
         
-{/* FILTRES : DATES, STATUT ET ACTIONS */}
-<div className="grid grid-cols-1 items-end gap-3 border-b border-[#edf0f2] p-4 md:grid-cols-2 xl:grid-cols-[minmax(180px,1fr)_minmax(180px,1fr)_190px_auto_auto]">
+
+{/* FILTRES : DATES ET ACTIONS */}
+<div className="grid grid-cols-1 items-end gap-3 border-b border-[#edf0f2] p-4 md:grid-cols-2 xl:grid-cols-[minmax(180px,1fr)_minmax(180px,1fr)_190px_auto]">
 
   {/* DATE DE DÉBUT */}
   <div className="flex min-w-0 flex-col gap-1.5">
@@ -1418,23 +1371,6 @@ const confirmerSuppression = async () => {
     />
   </div>
 
-  {/* STATUT */}
-  <div className="relative min-w-0">
-    <Filter className="pointer-events-none absolute left-3 top-1/2 size-[17px] -translate-y-1/2 text-[#64748b]" />
-
-    <select
-      value={statusFilter}
-      onChange={(event) => setStatusFilter(event.target.value)}
-      className="h-11 w-full appearance-none rounded-lg border border-[#dfe4e9] bg-white pl-10 pr-8 text-sm font-medium text-[#334155] outline-none focus:border-[#556B2F] focus:ring-2 focus:ring-[#556B2F]/10"
-    >
-      <option>Tous les statuts</option>
-      <option>En cours</option>
-      <option>Terminé</option>
-      <option>En attente</option>
-      <option>Annulé</option>
-    </select>
-  </div>
-
   {/* RÉINITIALISER */}
   <Button
     type="button"
@@ -1458,6 +1394,53 @@ const confirmerSuppression = async () => {
   </Button>
 
 </div>
+
+{/* FILTRES PAR STATUT : DEUXIÈME LIGNE */}
+<div className="grid grid-cols-2 gap-2 border-b border-[#edf0f2] bg-white px-4 py-3 sm:grid-cols-4 xl:grid-cols-7">
+
+  {statusCounts.map((item, index) => {
+    const active = statusFilter === item.label;
+
+    const styles = [
+      'border-[#dbeafe] bg-[#eff6ff] text-[#2563eb]',
+      'border-[#e5e7eb] bg-[#f8fafc] text-[#64748b]',
+      'border-[#fde68a] bg-[#fffbeb] text-[#b7791f]',
+      'border-[#e9d5ff] bg-[#faf5ff] text-[#9333ea]',
+      'border-[#bbf7d0] bg-[#ecfdf5] text-[#16833b]',
+      'border-[#fecaca] bg-[#fff1f2] text-[#e11d48]',
+      'border-[#a5f3fc] bg-[#ecfeff] text-[#0f9297]',
+    ];
+
+    const icons = [
+      <FileText className="size-4" />,
+      <UserRound className="size-4" />,
+      <Scale className="size-4" />,
+      <Clock3 className="size-4" />,
+      <Factory className="size-4" />,
+      <CreditCard className="size-4" />,
+      <CheckCircle2 className="size-4" />,
+    ];
+
+    return (
+      <button
+        key={item.label}
+        type="button"
+        onClick={() => setStatusFilter(item.label)}
+        className={`flex min-w-0 items-center justify-center gap-1.5 rounded-lg border px-2 py-2.5 text-xs font-semibold transition ${
+          active
+            ? 'border-[#2878e8] bg-[#2878e8] text-white shadow-sm'
+            : `${styles[index]} hover:brightness-95`
+        }`}
+      >
+        {icons[index]}
+        <span className="truncate">{item.label}</span>
+        <span className="shrink-0">({item.count})</span>
+      </button>
+    );
+  })}
+
+</div>
+
 
 
 
