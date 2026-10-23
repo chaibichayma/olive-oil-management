@@ -1,4 +1,5 @@
 import {
+  useEffect,
   useMemo,
   useRef,
   useState,
@@ -40,6 +41,8 @@ import {
   Scale,
   Factory,
   CreditCard,
+  ChevronLeft,
+  ChevronRight,
 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
@@ -415,7 +418,79 @@ const confirmerSuppression = async () => {
   return result;
 }, [bons, dateDebut, dateFin, statusFilter]);
 
+/* ==========================================================
+   PAGINATION PERSONNALISÉE
+========================================================== */
 
+const [pageSize, setPageSize] = useState(10);
+const [currentPage, setCurrentPage] = useState(1);
+
+const totalPages = Math.max(
+  1,
+  Math.ceil(filteredBons.length / pageSize),
+);
+
+const startIndex =
+  filteredBons.length === 0
+    ? 0
+    : (currentPage - 1) * pageSize + 1;
+
+const endIndex = Math.min(
+  currentPage * pageSize,
+  filteredBons.length,
+);
+
+const paginatedBons = useMemo(() => {
+  const start = (currentPage - 1) * pageSize;
+
+  return filteredBons.slice(start, start + pageSize);
+}, [filteredBons, currentPage, pageSize]);
+
+/* Revenir à la première page lors d'un changement de filtre */
+useEffect(() => {
+  setCurrentPage(1);
+}, [dateDebut, dateFin, statusFilter, pageSize]);
+
+/* Corriger la page si le nombre de résultats diminue */
+useEffect(() => {
+  if (currentPage > totalPages) {
+    setCurrentPage(totalPages);
+  }
+}, [currentPage, totalPages]);
+
+/* Numéros de pages avec ellipses */
+const getPageNumbers = () => {
+  const pages: (number | '...')[] = [];
+
+  if (totalPages <= 5) {
+    for (let page = 1; page <= totalPages; page++) {
+      pages.push(page);
+    }
+
+    return pages;
+  }
+
+  pages.push(1);
+
+  if (currentPage > 3) {
+    pages.push('...');
+  }
+
+  const start = Math.max(2, currentPage - 1);
+  const end = Math.min(totalPages - 1, currentPage + 1);
+
+  for (let page = start; page <= end; page++) {
+    pages.push(page);
+  }
+
+  if (currentPage < totalPages - 2) {
+    pages.push('...');
+  }
+
+  pages.push(totalPages);
+
+  return pages;
+};
   /* ==========================================================
      RESET
   ========================================================== */
@@ -517,6 +592,8 @@ const confirmerSuppression = async () => {
       </div>
     );
   };
+
+  
 
 
   /* ==========================================================
@@ -1225,110 +1302,7 @@ const confirmerSuppression = async () => {
       ====================================================== */}
 
       <div className="overflow-hidden rounded-xl border border-[#e5e7eb] bg-white shadow-[0_2px_12px_rgba(15,23,42,0.04)]">
-
-
-        {/* ====================================================
-            STATISTIQUES
-        ==================================================== */}
-
-        <div className="grid grid-cols-1 gap-3 border-b border-[#edf0f2] bg-[#fafcf9] px-4 py-3 sm:grid-cols-2 xl:grid-cols-4">
-
-
-          <div className="flex h-[82px] items-center gap-4 rounded-lg border border-[#e5e7eb] bg-white px-5">
-
-            <div className="flex size-12 shrink-0 items-center justify-center rounded-xl bg-[#e8f7ed]">
-
-              <FileText className="size-6 text-[#16833b]" />
-
-            </div>
-
-            <div>
-
-              <p className="text-[22px] font-bold leading-6 text-[#172033]">
-                {totalBons}
-              </p>
-
-              <p className="mt-1 text-xs text-[#7b8798]">
-                Bons de réception au total
-              </p>
-
-            </div>
-
-          </div>
-
-
-          <div className="flex h-[82px] items-center gap-4 rounded-lg border border-[#dbeafe] bg-white px-5">
-
-            <div className="flex size-12 shrink-0 items-center justify-center rounded-xl bg-[#e8f1ff]">
-
-              <CheckCircle2 className="size-6 text-[#2563eb]" />
-
-            </div>
-
-            <div>
-
-              <p className="text-[22px] font-bold leading-6 text-[#172033]">
-                {bonsEnCours}
-              </p>
-
-              <p className="mt-1 text-xs text-[#7b8798]">
-                Bons en cours
-              </p>
-
-            </div>
-
-          </div>
-
-
-          <div className="flex h-[82px] items-center gap-4 rounded-lg border border-[#fed7aa] bg-white px-5">
-
-            <div className="flex size-12 shrink-0 items-center justify-center rounded-xl bg-[#fff1df]">
-
-              <Clock3 className="size-6 text-[#ea580c]" />
-
-            </div>
-
-            <div>
-
-              <p className="text-[22px] font-bold leading-6 text-[#172033]">
-                {bonsEnAttente}
-              </p>
-
-              <p className="mt-1 text-xs text-[#7b8798]">
-                Bons en attente
-              </p>
-
-            </div>
-
-          </div>
-
-
-          <div className="flex h-[82px] items-center gap-4 rounded-lg border border-[#fecaca] bg-white px-5">
-
-            <div className="flex size-12 shrink-0 items-center justify-center rounded-xl bg-[#ffe9eb]">
-
-              <XCircle className="size-6 text-[#dc2626]" />
-
-            </div>
-
-            <div>
-
-              <p className="text-[22px] font-bold leading-6 text-[#172033]">
-                {bonsAnnules}
-              </p>
-
-              <p className="mt-1 text-xs text-[#7b8798]">
-                Bons annulés
-              </p>
-
-            </div>
-
-          </div>
-
-        </div>
-
-
-        
+      
 
 {/* FILTRES : DATES ET ACTIONS */}
 <div className="grid grid-cols-1 items-end gap-3 border-b border-[#edf0f2] p-4 md:grid-cols-2 xl:grid-cols-[minmax(180px,1fr)_minmax(180px,1fr)_190px_auto]">
@@ -1372,26 +1346,28 @@ const confirmerSuppression = async () => {
   </div>
 
   {/* RÉINITIALISER */}
-  <Button
-    type="button"
-    variant="outline"
-    onClick={handleReset}
-    className="h-11 whitespace-nowrap rounded-lg"
-  >
-    <RefreshCcw className="size-4" />
-    Réinitialiser
-  </Button>
+{/* RÉINITIALISER */}
+{/* RÉINITIALISER */}
+<Button
+  type="button"
+  variant="outline"
+  onClick={handleReset}
+  className="h-11 gap-2 whitespace-nowrap rounded-lg border border-orange-200 bg-orange-50 px-5 text-sm font-semibold text-orange-700 shadow-sm transition-colors hover:border-orange-300 hover:bg-orange-100 hover:text-orange-800"
+>
+  <RefreshCcw className="size-[17px]" />
+  Réinitialiser
+</Button>
 
-  {/* EXPORTER */}
-  <Button
-    type="button"
-    variant="outline"
-    onClick={handleExport}
-    className="h-11 whitespace-nowrap rounded-lg"
-  >
-    <Download className="size-4" />
-    Exporter
-  </Button>
+{/* EXPORTER */}
+<Button
+  type="button"
+  variant="outline"
+  onClick={handleExport}
+  className="h-11 gap-2 whitespace-nowrap rounded-lg border border-[#DCE8CF] bg-[#F4F8EF] px-5 text-sm font-semibold text-[#556B2F] shadow-sm transition-colors hover:border-[#C7D9B3] hover:bg-[#EAF2E0] hover:text-[#435B2B]"
+>
+  <Download className="size-[17px]" />
+  Exporter
+</Button>
 
 </div>
 
@@ -1451,11 +1427,11 @@ const confirmerSuppression = async () => {
         <div className="w-full px-4 pb-4">
 
           <div
-            className="w-full"
-            style={{
-              height: '600px',
-            }}
-          >
+  className="w-full"
+  style={{
+    height: `${Math.max(1, paginatedBons.length) * 58 + 50}px`,
+  }}
+>
 
             <AgGridProvider
               modules={[
@@ -1465,9 +1441,7 @@ const confirmerSuppression = async () => {
 
               <AgGridReact<BonReception>
 
-                rowData={
-                  filteredBons
-                }
+                rowData={paginatedBons}
 
                 columnDefs={
                   columnDefs
@@ -1489,20 +1463,7 @@ const confirmerSuppression = async () => {
                   50
                 }
 
-                pagination={
-                  true
-                }
-
-                paginationPageSize={
-                  10
-                }
-
-                paginationPageSizeSelector={[
-                  5,
-                  10,
-                  20,
-                  50,
-                ]}
+                
 
                 animateRows={
                   true
@@ -1610,6 +1571,98 @@ const confirmerSuppression = async () => {
               />
 
             </AgGridProvider>
+            </div>
+            {/* ====================================================
+    PAGINATION PERSONNALISÉE
+==================================================== */}
+
+<div className="flex flex-col gap-4 border-t border-[#edf0f2] bg-white px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
+
+  {/* Nombre de résultats et choix de la taille */}
+  <div className="flex flex-wrap items-center gap-3 text-sm text-[#64748b]">
+
+    
+
+    <div className="flex items-center gap-2">
+      <label htmlFor="pageSize" className="whitespace-nowrap">
+        Lignes par page
+      </label>
+
+      <select
+        id="pageSize"
+        value={pageSize}
+        onChange={(event) => {
+          setPageSize(Number(event.target.value));
+        }}
+        className="h-9 rounded-lg border border-[#dfe4e9] bg-white px-2 text-sm font-medium text-[#334155] outline-none focus:border-[#556B2F] focus:ring-2 focus:ring-[#556B2F]/10"
+      >
+        {[5, 10, 20, 50].map((size) => (
+          <option key={size} value={size}>
+            {size}
+          </option>
+        ))}
+      </select>
+    </div>
+
+  </div>
+
+  {/* Navigation entre les pages */}
+  <div className="flex flex-wrap items-center justify-center gap-1.5">
+
+    <button
+      type="button"
+      title="Page précédente"
+      aria-label="Page précédente"
+      disabled={currentPage === 1}
+      onClick={() => {
+        setCurrentPage((page) => Math.max(1, page - 1));
+      }}
+      className="flex size-9 items-center justify-center rounded-lg border border-[#dfe4e9] text-[#64748b] transition hover:border-[#556B2F] hover:bg-[#f5f8f1] hover:text-[#556B2F] disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:border-[#dfe4e9] disabled:hover:bg-white disabled:hover:text-[#64748b]"
+    >
+      <ChevronLeft className="size-4" />
+    </button>
+
+    {getPageNumbers().map((page, index) =>
+      page === '...' ? (
+        <span
+          key={`ellipsis-${index}`}
+          className="flex size-9 items-center justify-center text-sm text-[#94a3b8]"
+        >
+          ...
+        </span>
+      ) : (
+        <button
+          key={page}
+          type="button"
+          aria-label={`Page ${page}`}
+          aria-current={currentPage === page ? 'page' : undefined}
+          onClick={() => setCurrentPage(page)}
+          className={`flex size-9 items-center justify-center rounded-lg border text-sm font-semibold transition ${
+            currentPage === page
+              ? 'border-[#556B2F] bg-[#556B2F] text-white shadow-sm'
+              : 'border-[#dfe4e9] bg-white text-[#475569] hover:border-[#556B2F] hover:bg-[#f5f8f1] hover:text-[#556B2F]'
+          }`}
+        >
+          {page}
+        </button>
+      ),
+    )}
+
+    <button
+      type="button"
+      title="Page suivante"
+      aria-label="Page suivante"
+      disabled={currentPage === totalPages}
+      onClick={() => {
+        setCurrentPage((page) => Math.min(totalPages, page + 1));
+      }}
+      className="flex size-9 items-center justify-center rounded-lg border border-[#dfe4e9] text-[#64748b] transition hover:border-[#556B2F] hover:bg-[#f5f8f1] hover:text-[#556B2F] disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:border-[#dfe4e9] disabled:hover:bg-white disabled:hover:text-[#64748b]"
+    >
+      <ChevronRight className="size-4" />
+    </button>
+
+  </div>
+
 
           </div>
 

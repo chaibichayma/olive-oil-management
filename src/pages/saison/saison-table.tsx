@@ -1,5 +1,5 @@
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   AllCommunityModule,
   ColDef,
@@ -16,7 +16,9 @@ import {
   Circle,
   PlayCircle,
   CheckCircle2,
+  ChevronRight,
   ChevronDown,
+  Search,
 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
@@ -442,6 +444,39 @@ export function SaisonTable({
     [],
   );
 
+  const [pageSize, setPageSize] = useState(10);
+const [currentPage, setCurrentPage] = useState(1);
+
+const totalPages = Math.max(
+  1,
+  Math.ceil(filteredSaisons.length / pageSize),
+);
+
+const startIndex =
+  filteredSaisons.length === 0
+    ? 0
+    : (currentPage - 1) * pageSize + 1;
+
+const endIndex = Math.min(
+  currentPage * pageSize,
+  filteredSaisons.length,
+);
+
+const paginatedSaisons = useMemo(() => {
+  const start = (currentPage - 1) * pageSize;
+  return filteredSaisons.slice(start, start + pageSize);
+}, [filteredSaisons, currentPage, pageSize]);
+
+useEffect(() => {
+  setCurrentPage(1);
+}, [search, selectedFilter, selectedYear, pageSize, saisons.length]);
+
+useEffect(() => {
+  if (currentPage > totalPages) {
+    setCurrentPage(totalPages);
+  }
+}, [currentPage, totalPages]);
+
   /* RENDER */
 
   return (
@@ -449,234 +484,353 @@ export function SaisonTable({
       <div className="w-full min-w-0 max-w-full overflow-hidden rounded-md border border-[#e5e7eb] bg-white shadow-[0_2px_12px_rgba(15,23,42,0.04)]">
         {/* TOOLBAR */}
         {/* TOOLBAR : FILTRES PAR STATUT + ACTIONS */}
-<div className="flex min-w-0 flex-col gap-3 border-b border-[#edf0f2] bg-white px-3 py-3 sm:px-4 lg:flex-row lg:items-center lg:justify-between">
+{/* TOOLBAR — DESIGN PROFESSIONNEL */}
+<div className="w-full border-b border-slate-100 bg-white p-4 sm:p-5">
+  <div className="flex flex-col gap-4 2xl:flex-row 2xl:items-end">
 
-  {/* FILTRES CLIQUABLES */}
-  <div className="flex min-w-0 flex-wrap items-center gap-5 lg:flex-1 lg:gap-6">
-<div className="relative min-w-0">
-  <CalendarDays className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-[#556B2F]" />
+    {/* FILTRE PAR ANNÉE */}
+    <div className="w-full shrink-0 2xl:w-[220px]">
+      <label
+        htmlFor="saison-year"
+        className="mb-2 block text-sm font-semibold text-slate-700"
+      >
+        Année
+      </label>
 
-  <select
-    value={selectedYear}
-    onChange={(event) => setSelectedYear(event.target.value)}
-    className="h-10 w-full appearance-none rounded-lg border border-[#dfe4e9] bg-white pl-9 pr-8 text-xs font-semibold text-[#334155] outline-none transition-all hover:border-[#a8b995] focus:border-[#556B2F] focus:ring-2 focus:ring-[#556B2F]/10 lg:w-[195px]"
-  >
-    <option value="Toutes les années">Toutes les années</option>
+      <div className="relative">
+        <CalendarDays className="pointer-events-none absolute left-3 top-1/2 size-[18px] -translate-y-1/2 text-slate-500" />
 
-    {[...new Set(saisons.map((saison) => saison.year))]
-      .sort((a, b) => b - a)
-      .map((year) => (
-        <option key={year} value={String(year)}>
-          {year}
-        </option>
-      ))}
-  </select>
+        <select
+          id="saison-year"
+          value={selectedYear}
+          onChange={(event) => setSelectedYear(event.target.value)}
+          className="h-11 w-full appearance-none rounded-md border border-slate-200 bg-white pl-10 pr-10 text-sm font-medium text-slate-700 shadow-sm outline-none transition hover:border-[#a8b995] focus:border-[#556B2F] focus:ring-4 focus:ring-[#556B2F]/10"
+        >
+          <option value="Toutes les années">Toutes les années</option>
 
-  <ChevronDown className="pointer-events-none absolute right-3 top-1/2 size-3.5 -translate-y-1/2 text-[#64748b]" />
-</div>
+          {[...new Set(saisons.map((saison) => saison.year))]
+            .sort((a, b) => b - a)
+            .map((year) => (
+              <option key={year} value={String(year)}>
+                Saison {year}
+              </option>
+            ))}
+        </select>
 
-    {/* TOUTES LES SAISONS */}
-    <button
-      type="button"
-      onClick={() => setSelectedFilter('Toutes les saisons')}
-      aria-pressed={selectedFilter === 'Toutes les saisons'}
-      className={`flex h-10 min-w-0 items-center justify-between gap-2 rounded-lg border px-3 transition-all duration-200 lg:min-w-[165px] ${
-        selectedFilter === 'Toutes les saisons'
-          ? 'border-[#8da65b] bg-[#f2f6e9] text-[#35491f] shadow-sm'
-          : 'border-[#e2e7ed] bg-white text-[#334155] hover:border-[#b8c99a] hover:bg-[#f8faf5]'
-      }`}
-    >
-      <span className="flex min-w-0 items-center gap-2">
-        <CalendarDays className="size-[17px] shrink-0 text-[#556B2F]" />
-        <span className="truncate text-xs font-semibold">
-          Toutes les saisons
+        <ChevronDown className="pointer-events-none absolute right-3 top-1/2 size-4 -translate-y-1/2 text-slate-500" />
+      </div>
+    </div>
+
+    {/* FILTRES PAR STATUT */}
+    <div className="flex flex-wrap items-center gap-3">
+
+      {/* EN COURS */}
+      <button
+        type="button"
+        onClick={() => setSelectedFilter('En cours')}
+        aria-pressed={selectedFilter === 'En cours'}
+        className={`flex h-11 items-center justify-center gap-3 rounded-md border px-4 transition-all duration-200 ${
+          selectedFilter === 'En cours'
+            ? 'border-[#c6dfb3] bg-[#f1f8eb] text-[#426329] shadow-sm'
+            : 'border-slate-200 bg-white text-slate-600 hover:border-[#c6dfb3] hover:bg-[#f8fbf5]'
+        }`}
+      >
+        <Circle className="size-3 shrink-0 fill-[#4d7c2f] text-[#4d7c2f]" />
+
+        <span className="whitespace-nowrap text-sm font-semibold">
+          En cours
         </span>
-      </span>
 
-      <span className="flex size-6 shrink-0 items-center justify-center rounded-md bg-[#e7edd9] text-xs font-bold text-[#455b29]">
-        {saisons.length}
-      </span>
-    </button>
+        <span className="flex size-7 items-center justify-center rounded-full bg-[#e4efd8] text-xs font-bold text-[#426329]">
+          {saisons.filter((s) => s.statusId === 1).length}
+        </span>
+      </button>
 
-    {/* SAISONS EN COURS */}
-    <button
-      type="button"
-      onClick={() => setSelectedFilter('En cours')}
-      aria-pressed={selectedFilter === 'En cours'}
-      className={`flex h-10 min-w-0 items-center justify-between gap-2 rounded-lg border px-3 transition-all duration-200 lg:min-w-[125px] ${
-        selectedFilter === 'En cours'
-          ? 'border-[#a8d8b7] bg-[#eff9f1] text-[#166534] shadow-sm'
-          : 'border-[#e2e7ed] bg-white text-[#334155] hover:border-[#b8dfc3] hover:bg-[#f7fcf8]'
-      }`}
-    >
-      <span className="flex min-w-0 items-center gap-2">
-        <Circle className="size-3 shrink-0 fill-[#199447] text-[#199447]" />
-        <span className="truncate text-xs font-semibold">En cours</span>
-      </span>
+      {/* CLÔTURÉES */}
+      <button
+        type="button"
+        onClick={() => setSelectedFilter('Clôturées')}
+        aria-pressed={selectedFilter === 'Clôturées'}
+        className={`flex h-11 items-center justify-center gap-3 rounded-md border px-4 transition-all duration-200 ${
+          selectedFilter === 'Clôturées'
+            ? 'border-slate-300 bg-slate-100 text-slate-700 shadow-sm'
+            : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50'
+        }`}
+      >
+        <Circle className="size-3 shrink-0 fill-slate-500 text-slate-500" />
 
-      <span className="flex size-6 shrink-0 items-center justify-center rounded-md bg-[#e8f5eb] text-xs font-bold text-[#166534]">
-        {saisons.filter((s) => s.statusId === 1).length}
-      </span>
-    </button>
+        <span className="whitespace-nowrap text-sm font-semibold">
+          Clôturées
+        </span>
 
-    {/* SAISONS CLÔTURÉES */}
-    <button
-      type="button"
-      onClick={() => setSelectedFilter('Clôturées')}
-      aria-pressed={selectedFilter === 'Clôturées'}
-      className={`flex h-10 min-w-0 items-center justify-between gap-2 rounded-lg border px-3 transition-all duration-200 lg:min-w-[135px] ${
-        selectedFilter === 'Clôturées'
-          ? 'border-[#cbd1da] bg-[#f1f3f5] text-[#334155] shadow-sm'
-          : 'border-[#e2e7ed] bg-white text-[#334155] hover:border-[#cbd1da] hover:bg-[#f8f9fa]'
-      }`}
-    >
-      <span className="flex min-w-0 items-center gap-2">
-        <Circle className="size-3 shrink-0 fill-[#8490a3] text-[#8490a3]" />
-        <span className="truncate text-xs font-semibold">Clôturées</span>
-      </span>
+        <span className="flex size-7 items-center justify-center rounded-full bg-slate-200 text-xs font-bold text-slate-600">
+          {saisons.filter((s) => s.statusId === 2).length}
+        </span>
+      </button>
+    </div>
 
-      <span className="flex size-6 shrink-0 items-center justify-center rounded-md bg-[#e9edf2] text-xs font-bold text-[#475569]">
-        {saisons.filter((s) => s.statusId === 2).length}
-      </span>
-    </button>
-  </div>
+    {/* RECHERCHE */}
+    <div className="relative min-w-0 flex-1 2xl:min-w-[220px]">
+      <label htmlFor="saison-search" className="sr-only">
+        Rechercher une saison
+      </label>
 
-  {/* ACTIONS */}
-  <div className="flex shrink-0 items-center gap-2">
+      <Search className="pointer-events-none absolute left-4 top-1/2 size-5 -translate-y-1/2 text-slate-500" />
 
-    {/* RÉINITIALISER */}
-    <Button
-      type="button"
-      variant="outline"
-      onClick={() => {
-  setSelectedYear('Toutes les années');
-  setSelectedFilter('Toutes les saisons');
-  setSearch('');
-}}
-      className="h-10 gap-2 rounded-lg border-[#dfe4e9] bg-white px-3 text-xs font-semibold text-[#334155] hover:border-[#a8b995] hover:bg-[#f5f8f1] hover:text-[#556B2F] sm:px-4"
-    >
-      <RotateCcw className="size-4 shrink-0" />
-      <span>Réinitialiser</span>
-    </Button>
+      <input
+        id="saison-search"
+        type="search"
+        value={search}
+        onChange={(event) => setSearch(event.target.value)}
+        placeholder="Rechercher une saison..."
+        className="h-11 w-full rounded-md border border-transparent bg-slate-50 pl-11 pr-4 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 hover:bg-slate-100 focus:border-[#b7c99d] focus:bg-white focus:ring-4 focus:ring-[#556B2F]/10"
+      />
+    </div>
 
-    {/* EXPORTER */}
-    <Button
-      type="button"
-      variant="outline"
-      onClick={() => {
-        const headers = [
-          'Année',
-          'Date début',
-          'Date fin',
-          "Prix/kg d'olive (DT)",
-          'Prix achat huile (DT)',
-          'Prix vente huile (DT)',
-          'Nombre de caisses',
-          'Statut',
-        ];
+    {/* ACTIONS */}
+    <div className="flex shrink-0 flex-wrap items-center gap-2">
 
-        const rows = filteredSaisons.map((s) => [
-          s.year,
-          formatDate(s.beginDate),
-          formatDate(s.endDate),
-          s.priceKilo,
-          s.priceAchat,
-          s.priceVente,
-          s.nbreCaisses,
-          s.statusId === 1 ? 'En cours' : 'Clôturée',
-        ]);
+      {/* RÉINITIALISER */}
+      {/* RÉINITIALISER */}
+<Button
+  type="button"
+  variant="outline"
+  onClick={() => {
+    setSelectedYear("Toutes les années");
+    setSelectedFilter("Toutes les saisons");
+    setSearch("");
+  }}
+  className="h-10 min-w-[200px] rounded-lg border border-orange-200 bg-orange-50 px-5 text-sm font-semibold text-orange-700 shadow-sm transition-colors hover:border-orange-300 hover:bg-orange-100 hover:text-orange-800"
+>
+  <RotateCcw className="size-[17px]" />
+  Réinitialiser
+</Button>
 
-        const csv = [headers, ...rows]
-          .map((row) =>
-            row
-              .map((value) =>
-                `"${String(value ?? '').replace(/"/g, '""')}"`,
-              )
-              .join(';'),
-          )
-          .join('\r\n');
+{/* EXPORTER */}
+<Button
+  type="button"
+  variant="outline"
+  onClick={() => {
+    const headers = [
+      "Année",
+      "Date début",
+      "Date fin",
+      "Prix/kg d'olive (DT)",
+      "Prix achat huile (DT)",
+      "Prix vente huile (DT)",
+      "Nombre de caisses",
+      "Statut",
+    ];
 
-        const blob = new Blob(
-          ['\uFEFF' + csv],
-          { type: 'text/csv;charset=utf-8;' },
-        );
+    const rows = filteredSaisons.map((s) => [
+      s.year,
+      formatDate(s.beginDate),
+      formatDate(s.endDate),
+      s.priceKilo,
+      s.priceAchat,
+      s.priceVente,
+      s.nbreCaisses,
+      s.statusId === 1 ? "En cours" : "Clôturée",
+    ]);
 
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement('a');
+    const csv = [headers, ...rows]
+      .map((row) =>
+        row
+          .map((value) => `"${String(value ?? "").replace(/"/g, '""')}"`)
+          .join(";"),
+      )
+      .join("\r\n");
 
-        link.href = url;
-        link.download = 'saisons.csv';
-        link.click();
+    const blob = new Blob(["\uFEFF" + csv], {
+      type: "text/csv;charset=utf-8;",
+    });
 
-        URL.revokeObjectURL(url);
-      }}
-      className="h-10 gap-2 rounded-lg border-[#dfe4e9] bg-white px-3 text-xs font-semibold text-[#334155] hover:border-[#a8b995] hover:bg-[#f5f8f1] hover:text-[#556B2F] sm:px-4"
-    >
-      <Download className="size-4 shrink-0" />
-      <span>Exporter</span>
-    </Button>
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+
+    link.href = url;
+    link.download = "saisons.csv";
+    link.click();
+
+    URL.revokeObjectURL(url);
+  }}
+  className="h-11 gap-2 rounded-lg border border-[#DCE8CF] bg-[#F4F8EF] px-5 text-sm font-semibold text-[#556B2F] shadow-sm transition-colors hover:border-[#C7D9B3] hover:bg-[#EAF2E0] hover:text-[#435B2B]"
+>
+  <Download className="size-[17px]" />
+  Exporter
+  <ChevronDown className="ml-1 size-4 text-[#71864E]" />
+</Button>
+    </div>
   </div>
 </div>
 
         {/* AG GRID */}
-        <div className="w-full min-w-0 max-w-full overflow-hidden">
-          <div className="w-full min-w-0 overflow-x-auto">
-            <div
-              className="w-full"
-              style={{
-                minWidth: '1100px',
-                height: 'min(600px, 75vh)',
-                minHeight: '420px',
-              }}
+        
+
+{/* TABLEAU AG GRID */}
+<div className="w-full min-w-0 overflow-x-auto">
+  <div
+    className="w-full"
+    style={{
+      minWidth: '1100px',
+      height: `${Math.max(1, paginatedSaisons.length) * 58 + 50}px`,
+      minHeight: '108px',
+    }}
+  >
+    <AgGridProvider modules={[AllCommunityModule]}>
+      <AgGridReact<Saison>
+        rowData={paginatedSaisons}
+        columnDefs={columnDefs}
+        defaultColDef={defaultColDef}
+        theme={saisonTheme}
+        rowHeight={58}
+        headerHeight={50}
+        pagination={false}
+        domLayout="normal"
+        animateRows={true}
+        suppressCellFocus={true}
+        getRowId={(params) => params.data.id}
+        localeText={{
+          noRowsToShow: 'Aucune saison trouvée',
+          filterOoo: 'Filtrer...',
+          equals: 'Égal à',
+          notEqual: 'Différent de',
+          contains: 'Contient',
+          notContains: 'Ne contient pas',
+          startsWith: 'Commence par',
+          endsWith: 'Se termine par',
+          lessThan: 'Inférieur à',
+          greaterThan: 'Supérieur à',
+          applyFilter: 'Appliquer',
+          resetFilter: 'Réinitialiser',
+          clearFilter: 'Effacer',
+        }}
+      />
+    </AgGridProvider>
+  </div>
+</div>
+
+
+{/* PAGINATION PERSONNALISÉE */}
+<div className="flex flex-col gap-4 border-t border-slate-200 bg-white px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-5">
+
+  {/* NOMBRE DE LIGNES */}
+  <div className="flex items-center gap-3">
+    <label
+      htmlFor="saison-page-size"
+      className="whitespace-nowrap text-xs font-medium text-slate-500"
+    >
+      Lignes par page
+    </label>
+
+    <div className="relative">
+      <select
+        id="saison-page-size"
+        value={pageSize}
+        onChange={(event) => {
+          setPageSize(Number(event.target.value));
+          setCurrentPage(1);
+        }}
+        className="h-9 min-w-[66px] appearance-none rounded-lg border border-slate-200 bg-white pl-3 pr-8 text-xs font-semibold text-slate-700 shadow-sm outline-none transition hover:border-[#a5b68b] focus:border-[#556B2F] focus:ring-2 focus:ring-[#556B2F]/10"
+      >
+        {[5, 10, 20, 50].map((size) => (
+          <option key={size} value={size}>
+            {size}
+          </option>
+        ))}
+      </select>
+
+      <ChevronDown className="pointer-events-none absolute right-2 top-1/2 size-3.5 -translate-y-1/2 text-slate-500" />
+    </div>
+  </div>
+
+  {/* COMPTEUR ET NAVIGATION */}
+  <div className="flex flex-wrap items-center justify-between gap-3 sm:justify-end">
+
+    <span className="whitespace-nowrap text-xs font-medium text-slate-500">
+      <span className="font-semibold text-slate-700">
+        {startIndex} à {endIndex}
+      </span>
+      {' '}sur{' '}
+      <span className="font-semibold text-slate-700">
+        {filteredSaisons.length}
+      </span>
+    </span>
+
+    <div className="flex items-center gap-1.5">
+
+      {/* PRÉCÉDENT */}
+      <button
+        type="button"
+        aria-label="Page précédente"
+        disabled={currentPage === 1}
+        onClick={() =>
+          setCurrentPage((page) => Math.max(1, page - 1))
+        }
+        className="flex size-9 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 shadow-sm transition hover:border-[#b5c59b] hover:bg-[#f5f8f1] hover:text-[#556B2F] disabled:cursor-not-allowed disabled:opacity-40"
+      >
+        <ChevronRight className="size-4 rotate-180" />
+      </button>
+
+      {/* NUMÉROS DE PAGES */}
+      {Array.from({ length: totalPages }, (_, index) => index + 1)
+        .filter((page) => {
+          return (
+            page === 1 ||
+            page === totalPages ||
+            Math.abs(page - currentPage) <= 1
+          );
+        })
+        .reduce<(number | string)[]>((pages, page, index, array) => {
+          if (index > 0 && page - array[index - 1] > 1) {
+            pages.push(`ellipsis-${page}`);
+          }
+          pages.push(page);
+          return pages;
+        }, [])
+        .map((page) =>
+          typeof page === 'string' ? (
+            <span
+              key={page}
+              className="flex size-9 items-center justify-center text-xs text-slate-400"
             >
-              <AgGridProvider modules={[AllCommunityModule]}>
-                <AgGridReact<Saison>
-                  rowData={filteredSaisons}
-                  columnDefs={columnDefs}
-                  defaultColDef={defaultColDef}
-                  theme={saisonTheme}
-                  rowHeight={58}
-                  headerHeight={50}
-                  pagination={true}
-                  paginationPageSize={10}
-                  paginationPageSizeSelector={[5, 10, 20, 50]}
-                  animateRows={true}
-                  suppressCellFocus={true}
-                  getRowId={(params) => params.data.id}
-                  localeText={{
-                    page: 'Page',
-                    more: 'Plus',
-                    to: 'à',
-                    of: 'sur',
-                    next: 'Suivant',
-                    last: 'Dernier',
-                    first: 'Premier',
-                    previous: 'Précédent',
-                    loadingOoo: 'Chargement...',
-                    noRowsToShow: 'Aucune saison trouvée',
-                    pageSizeSelectorLabel: 'Lignes par page',
-                    filterOoo: 'Filtrer...',
-                    equals: 'Égal à',
-                    notEqual: 'Différent de',
-                    contains: 'Contient',
-                    notContains: 'Ne contient pas',
-                    startsWith: 'Commence par',
-                    endsWith: 'Se termine par',
-                    lessThan: 'Inférieur à',
-                    lessThanOrEqual: 'Inférieur ou égal à',
-                    greaterThan: 'Supérieur à',
-                    greaterThanOrEqual: 'Supérieur ou égal à',
-                    andCondition: 'ET',
-                    orCondition: 'OU',
-                    applyFilter: 'Appliquer',
-                    resetFilter: 'Réinitialiser',
-                    clearFilter: 'Effacer',
-                  }}
-                />
-              </AgGridProvider>
-            </div>
-          </div>
-        </div>
+              …
+            </span>
+          ) : (
+            <button
+              key={page}
+              type="button"
+              aria-label={`Page ${page}`}
+              aria-current={currentPage === page ? 'page' : undefined}
+              onClick={() => setCurrentPage(page)}
+              className={`flex size-9 items-center justify-center rounded-lg border text-xs font-semibold transition-all ${
+                currentPage === page
+                  ? 'border-[#465a27] bg-[#556B2F] text-white shadow-[0_2px_5px_rgba(85,107,47,0.25)]'
+                  : 'border-slate-200 bg-white text-slate-600 shadow-sm hover:border-[#b5c59b] hover:bg-[#f5f8f1] hover:text-[#556B2F]'
+              }`}
+            >
+              {page}
+            </button>
+          ),
+        )}
+
+      {/* SUIVANT */}
+      <button
+        type="button"
+        aria-label="Page suivante"
+        disabled={currentPage === totalPages}
+        onClick={() =>
+          setCurrentPage((page) => Math.min(totalPages, page + 1))
+        }
+        className="flex size-9 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 shadow-sm transition hover:border-[#b5c59b] hover:bg-[#f5f8f1] hover:text-[#556B2F] disabled:cursor-not-allowed disabled:opacity-40"
+      >
+        <ChevronRight className="size-4" />
+      </button>
+
+    </div>
+  </div>
+</div>
+
       </div>
     </div>
   );

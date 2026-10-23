@@ -1,55 +1,66 @@
+
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import {
+  ArrowLeft,
   BadgeDollarSign,
   Check,
+  ChevronRight,
   Hash,
   Mail,
   MapPin,
   Phone,
   Save,
-  User,
+  ShieldCheck,
+  UserRound,
+  Wallet,
   X,
+  Building2,
+  CircleCheck,
+  GitBranch,
 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Container } from '@/components/common/container';
 
+/* ============================================================
+   PAGE AJOUTER UN COMPTE
+============================================================ */
+
+interface CompteFormData {
+  name: string;
+  adresse: string;
+  mobile: string;
+  mail: string;
+  statusId: string;
+  priceConv: string;
+  isBaseCompte: boolean;
+  baseCompteId: string;
+}
+
 export function AjouterComptePage() {
   const navigate = useNavigate();
 
-  /* ============================================================
-     FORMULAIRE
-  ============================================================ */
+  const [formData, setFormData] = useState<CompteFormData>({
+    name: '',
+    adresse: '',
+    mobile: '',
+    mail: '',
+    statusId: '1',
+    priceConv: '0',
+    isBaseCompte: false,
+    baseCompteId: '',
+  });
 
- const [formData, setFormData] = useState({
-  name: '',
-  adresse: '',
-  mobile: '',
-  mail: '',
-  statusId: '1',
-  priceConv: '',
-  isBaseCompte: false,
-  baseCompteId: '',
-});
-  
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
 
-  /* ============================================================
-     MODALE SUCCÈS
-  ============================================================ */
-
-  const [showSuccessModal, setShowSuccessModal] =
-    useState(false);
-
-  /* ============================================================
+  /* ==========================================================
      MODIFICATION DES CHAMPS
-  ============================================================ */
+  ========================================================== */
 
   const handleChange = (
-    event: React.ChangeEvent<
-      HTMLInputElement | HTMLSelectElement
-    >,
+    event: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
   ) => {
     const { name, value } = event.target;
 
@@ -60,378 +71,280 @@ export function AjouterComptePage() {
   };
 
   const handleToggleBaseCompte = () => {
-  setFormData((current) => ({
-    ...current,
-    isBaseCompte: !current.isBaseCompte,
-  }));
-};
-  /* ============================================================
-     COMPTE DE BASE
-  ============================================================ */
-
-  const handleBaseCompteChange = (
-    event: React.ChangeEvent<HTMLInputElement>,
-  ) => {
     setFormData((current) => ({
       ...current,
-      isBaseCompte: event.target.checked,
-      baseCompteId: event.target.checked
-        ? ''
-        : current.baseCompteId,
+      isBaseCompte: !current.isBaseCompte,
+      baseCompteId: !current.isBaseCompte ? '' : current.baseCompteId,
     }));
   };
 
-  /* ============================================================
+  /* ==========================================================
      ANNULER
-  ============================================================ */
+  ========================================================== */
 
   const handleCancel = () => {
     navigate('/store-admin/accounts');
   };
 
-  /* ============================================================
+  /* ==========================================================
      ENREGISTRER
-  ============================================================ */
+  ========================================================== */
 
-  const handleSubmit = (
-    event: React.FormEvent<HTMLFormElement>,
-  ) => {
+  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
-    console.log('Nouveau compte :', {
-      ...formData,
+    const nouveauCompte = {
+      compteId: Date.now(),
+      name: formData.name.trim(),
+      adresse: formData.adresse.trim(),
+      mobile: formData.mobile.trim(),
+      mail: formData.mail.trim(),
       statusId: Number(formData.statusId),
       priceConv: Number(formData.priceConv),
-      baseCompteId:
-        formData.baseCompteId === ''
+      isBaseCompte: formData.isBaseCompte,
+      baseCompteId: formData.isBaseCompte
+        ? null
+        : formData.baseCompteId.trim() === ''
           ? null
           : Number(formData.baseCompteId),
-    });
+    };
 
-    /*
-      Plus tard :
-      appel API / Supabase ici
-    */
+    console.log('Nouveau compte :', nouveauCompte);
 
+    // Remplacer par un appel API ou Supabase pour enregistrer réellement.
     setShowSuccessModal(true);
   };
 
-  /* ============================================================
-     FERMER MODALE SUCCÈS
-  ============================================================ */
-
-  const handleCloseSuccess = () => {
-    setShowSuccessModal(false);
-  };
-
-  /* ============================================================
-     BOUTON OK
-  ============================================================ */
-
-  const handleSuccessOk = () => {
-    setShowSuccessModal(false);
-
-    navigate('/store-admin/accounts');
-  };
-
-  /* ============================================================
+  /* ==========================================================
      RENDER
-  ============================================================ */
+  ========================================================== */
 
   return (
     <>
-      {/* ========================================================
-          HEADER DE PAGE
-      ======================================================== */}
-
       <Container>
+        <div className="w-full py-5 sm:py-6">
+          {/* FIL D'ARIANE */}
+          
 
-        <div className="py-5">
+          {/* HEADER DE PAGE */}
+          <div className="flex flex-col gap-5 border-b border-[#e9ede4] pb-6 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex min-w-0 items-start gap-4">
+              <div className="flex size-12 shrink-0 items-center justify-center rounded-xl border border-[#dfe8d2] bg-[#eef4e6]">
+                <Wallet className="size-6 text-[#556B2F]" />
+              </div>
 
-          <h1 className="text-2xl font-bold text-foreground">
-            Ajouter un compte
-          </h1>
+              <div className="min-w-0">
+                <div className="mb-1.5 flex flex-wrap items-center gap-2">
+                  <h1 className="text-xl font-bold tracking-tight text-[#172033] sm:text-2xl">
+                    Ajouter un compte
+                  </h1>
 
-          <div className="mt-2 flex items-center gap-2 text-sm text-muted-foreground">
+                  <span className="inline-flex items-center gap-1.5 rounded-full border border-[#dfe8d2] bg-[#f5f8f0] px-2.5 py-1 text-[10px] font-semibold text-[#556B2F] sm:text-xs">
+                    <span className="size-1.5 rounded-full bg-[#718b4b]" />
+                    Nouveau compte
+                  </span>
+                </div>
 
-            <span>
-              Accueil
-            </span>
-
-            <span>
-              /
-            </span>
-
-            <span>
-              Paramétrage
-            </span>
-
-            <span>
-              /
-            </span>
-
-            <span>
-              Comptes
-            </span>
-
-            <span>
-              /
-            </span>
-
-            <span className="font-medium text-foreground">
-              Ajouter
-            </span>
-
-          </div>
-
-        </div>
-
-      </Container>
-
-
-      {/* ========================================================
-          FORMULAIRE
-      ======================================================== */}
-
-      <Container>
-
-        <form onSubmit={handleSubmit}>
-
-          <div className="mx-auto w-full max-w-6xl rounded-xl border border-border bg-white shadow-sm">
-
-            {/* ==================================================
-                HEADER CARD
-            ================================================== */}
-
-            <div className="border-b border-border px-6 py-5">
-
-              <h2 className="text-lg font-bold text-foreground">
-                Informations du compte
-              </h2>
-
-              <p className="mt-1 text-sm text-muted-foreground">
-                Veuillez remplir les informations du compte.
-              </p>
-
+                <p className="max-w-2xl text-sm leading-6 text-slate-500">
+                  Créez un compte et configurez ses coordonnées,
+                  son statut et ses paramètres de conversion.
+                </p>
+              </div>
             </div>
 
+            <Button
+  type="button"
+  variant="outline"
+  onClick={handleCancel}
+  className="h-10 shrink-0 gap-2 rounded-lg border border-[#DCE8CF] bg-[#F4F8EF] px-4 text-sm font-medium text-[#556B2F] transition hover:border-[#C7D9B3] hover:bg-[#EAF2E0] hover:text-[#435B2B]"
+>
+  <ArrowLeft className="size-4 text-[#718747]" />
+  Retour à la liste
+</Button>
+          </div>
+        </div>
+      </Container>
 
-            {/* ==================================================
-                CHAMPS
-            ================================================== */}
-
-            <div className="px-6 py-6">
-
-              <div className="grid grid-cols-1 gap-x-6 gap-y-5 md:grid-cols-2">
-
-                {/* ==================================================
-                    NOM
-                ================================================== */}
+      {/* FORMULAIRE PLEINE LARGEUR */}
+      <Container>
+        <form onSubmit={handleSubmit} className="w-full pb-8">
+          <div className="w-full overflow-hidden rounded-xl border border-[#e5e9e1] bg-white shadow-[0_2px_12px_rgba(15,23,42,0.035)]">
+            {/* SECTION 1 : INFORMATIONS GÉNÉRALES */}
+            <section className="px-5 py-6 sm:px-7 lg:px-8">
+              <div className="mb-6 flex items-center gap-3">
+                <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-[#eef4e6]">
+                  <Building2 className="size-5 text-[#556B2F]" />
+                </div>
 
                 <div>
+                  <h2 className="text-sm font-bold text-[#172033] sm:text-base">
+                    Informations générales
+                  </h2>
+                  <p className="mt-0.5 text-xs text-slate-500 sm:text-sm">
+                    Coordonnées et informations principales du compte
+                  </p>
+                </div>
+              </div>
 
+              <div className="grid grid-cols-1 gap-x-6 gap-y-5 md:grid-cols-2">
+                {/* NOM */}
+                <div>
                   <label
                     htmlFor="name"
-                    className="mb-2 block text-sm font-medium text-foreground"
+                    className="mb-2 block text-sm font-medium text-[#334155]"
                   >
-                    Nom
-
-                    <span className="ml-1 text-red-500">
-                      *
-                    </span>
+                    Nom du compte <span className="text-red-500">*</span>
                   </label>
 
                   <div className="relative">
-
-                    <User className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-
+                    <UserRound className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-400" />
                     <input
                       id="name"
                       name="name"
                       type="text"
                       value={formData.name}
                       onChange={handleChange}
-                      placeholder="Entrez le nom du compte"
+                      placeholder="Ex. : Ahmed Ben Ali"
+                      autoComplete="organization"
                       required
-                      className="h-11 w-full rounded-md border border-input bg-background pl-10 pr-3 text-sm outline-none transition focus:border-[#556B2F] focus:ring-1 focus:ring-[#556B2F]"
+                      className="h-11 w-full rounded-lg border border-[#dfe4e9] bg-white pl-10 pr-3 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-[#829663] focus:ring-2 focus:ring-[#556B2F]/10"
                     />
-
                   </div>
-
                 </div>
 
-
-                {/* ==================================================
-                    ADRESSE
-                ================================================== */}
-
+                {/* ADRESSE */}
                 <div>
-
                   <label
                     htmlFor="adresse"
-                    className="mb-2 block text-sm font-medium text-foreground"
+                    className="mb-2 block text-sm font-medium text-[#334155]"
                   >
-                    Adresse
-
-                    <span className="ml-1 text-red-500">
-                      *
-                    </span>
+                    Adresse <span className="text-red-500">*</span>
                   </label>
 
                   <div className="relative">
-
-                    <MapPin className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-
+                    <MapPin className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-400" />
                     <input
                       id="adresse"
                       name="adresse"
                       type="text"
                       value={formData.adresse}
                       onChange={handleChange}
-                      placeholder="Entrez l'adresse"
+                      placeholder="Ex. : Sousse"
+                      autoComplete="street-address"
                       required
-                      className="h-11 w-full rounded-md border border-input bg-background pl-10 pr-3 text-sm outline-none transition focus:border-[#556B2F] focus:ring-1 focus:ring-[#556B2F]"
+                      className="h-11 w-full rounded-lg border border-[#dfe4e9] bg-white pl-10 pr-3 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-[#829663] focus:ring-2 focus:ring-[#556B2F]/10"
                     />
-
                   </div>
-
                 </div>
 
-
-                {/* ==================================================
-                    MOBILE
-                ================================================== */}
-
+                {/* TÉLÉPHONE */}
                 <div>
-
                   <label
                     htmlFor="mobile"
-                    className="mb-2 block text-sm font-medium text-foreground"
+                    className="mb-2 block text-sm font-medium text-[#334155]"
                   >
-                    Mobile
-
-                    <span className="ml-1 text-red-500">
-                      *
-                    </span>
+                    Téléphone mobile <span className="text-red-500">*</span>
                   </label>
 
                   <div className="relative">
-
-                    <Phone className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-
+                    <Phone className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-400" />
                     <input
                       id="mobile"
                       name="mobile"
                       type="tel"
                       value={formData.mobile}
                       onChange={handleChange}
-                      placeholder="Entrez le numéro de mobile"
+                      placeholder="Ex. : 12345678"
+                      autoComplete="tel"
                       required
-                      className="h-11 w-full rounded-md border border-input bg-background pl-10 pr-3 text-sm outline-none transition focus:border-[#556B2F] focus:ring-1 focus:ring-[#556B2F]"
+                      className="h-11 w-full rounded-lg border border-[#dfe4e9] bg-white pl-10 pr-3 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-[#829663] focus:ring-2 focus:ring-[#556B2F]/10"
                     />
-
                   </div>
-
                 </div>
 
-
-                {/* ==================================================
-                    EMAIL
-                ================================================== */}
-
+                {/* EMAIL */}
                 <div>
-
                   <label
                     htmlFor="mail"
-                    className="mb-2 block text-sm font-medium text-foreground"
+                    className="mb-2 block text-sm font-medium text-[#334155]"
                   >
-                    Email
-
-                    <span className="ml-1 text-red-500">
-                      *
-                    </span>
+                    Adresse e-mail <span className="text-red-500">*</span>
                   </label>
 
                   <div className="relative">
-
-                    <Mail className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-
+                    <Mail className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-400" />
                     <input
                       id="mail"
                       name="mail"
                       type="email"
                       value={formData.mail}
                       onChange={handleChange}
-                      placeholder="Entrez l'adresse email"
+                      placeholder="Ex. : contact@example.com"
+                      autoComplete="email"
                       required
-                      className="h-11 w-full rounded-md border border-input bg-background pl-10 pr-3 text-sm outline-none transition focus:border-[#556B2F] focus:ring-1 focus:ring-[#556B2F]"
+                      className="h-11 w-full rounded-lg border border-[#dfe4e9] bg-white pl-10 pr-3 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-[#829663] focus:ring-2 focus:ring-[#556B2F]/10"
                     />
-
                   </div>
+                </div>
+              </div>
+            </section>
 
+            <div className="border-t border-[#edf0e9]" />
+
+            {/* SECTION 2 : STATUT ET CONVERSION */}
+            <section className="px-5 py-6 sm:px-7 lg:px-8">
+              <div className="mb-6 flex items-center gap-3">
+                <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-[#eef4e6]">
+                  <BadgeDollarSign className="size-5 text-[#556B2F]" />
                 </div>
 
-
-                {/* ==================================================
-                    STATUT
-                ================================================== */}
-
                 <div>
+                  <h2 className="text-sm font-bold text-[#172033] sm:text-base">
+                    Statut et conversion
+                  </h2>
+                  <p className="mt-0.5 text-xs text-slate-500 sm:text-sm">
+                    Définissez l’état du compte et son prix de conversion
+                  </p>
+                </div>
+              </div>
 
+              <div className="grid grid-cols-1 gap-x-6 gap-y-5 md:grid-cols-2">
+                {/* STATUT */}
+                <div>
                   <label
                     htmlFor="statusId"
-                    className="mb-2 block text-sm font-medium text-foreground"
+                    className="mb-2 block text-sm font-medium text-[#334155]"
                   >
-                    Statut
-
-                    <span className="ml-1 text-red-500">
-                      *
-                    </span>
-                  </label>
-
-                  <select
-                    id="statusId"
-                    name="statusId"
-                    value={formData.statusId}
-                    onChange={handleChange}
-                    required
-                    className="h-11 w-full rounded-md border border-input bg-background px-3 text-sm outline-none transition focus:border-[#556B2F] focus:ring-1 focus:ring-[#556B2F]"
-                  >
-
-                    <option value="1">
-                      Actif
-                    </option>
-
-                    <option value="2">
-                      Inactif
-                    </option>
-
-                  </select>
-
-                </div>
-
-
-                {/* ==================================================
-                    PRIX CONVERSION
-                ================================================== */}
-
-                <div>
-
-                  <label
-                    htmlFor="priceConv"
-                    className="mb-2 block text-sm font-medium text-foreground"
-                  >
-                    Prix conversion
-
-                    <span className="ml-1 text-red-500">
-                      *
-                    </span>
+                    Statut du compte <span className="text-red-500">*</span>
                   </label>
 
                   <div className="relative">
+                    <CircleCheck className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-400" />
+                    <select
+                      id="statusId"
+                      name="statusId"
+                      value={formData.statusId}
+                      onChange={handleChange}
+                      required
+                      className="h-11 w-full appearance-none rounded-lg border border-[#dfe4e9] bg-white pl-10 pr-3 text-sm text-slate-700 outline-none transition focus:border-[#829663] focus:ring-2 focus:ring-[#556B2F]/10"
+                    >
+                      <option value="1">Actif</option>
+                      <option value="2">Inactif</option>
+                    </select>
+                  </div>
+                </div>
 
-                    <BadgeDollarSign className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+                {/* PRIX CONVERSION */}
+                <div>
+                  <label
+                    htmlFor="priceConv"
+                    className="mb-2 block text-sm font-medium text-[#334155]"
+                  >
+                    Prix de conversion <span className="text-red-500">*</span>
+                  </label>
 
+                  <div className="relative">
+                    <BadgeDollarSign className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-400" />
                     <input
                       id="priceConv"
                       name="priceConv"
@@ -440,254 +353,191 @@ export function AjouterComptePage() {
                       step="0.01"
                       value={formData.priceConv}
                       onChange={handleChange}
-                      placeholder="Entrez le prix de conversion"
+                      placeholder="0.00"
                       required
-                      className="h-11 w-full rounded-md border border-input bg-background pl-10 pr-12 text-sm outline-none transition focus:border-[#556B2F] focus:ring-1 focus:ring-[#556B2F]"
+                      className="h-11 w-full rounded-lg border border-[#dfe4e9] bg-white pl-10 pr-12 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-[#829663] focus:ring-2 focus:ring-[#556B2F]/10"
                     />
-
-                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
+                    <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xs font-medium text-slate-500">
                       DT
                     </span>
-
                   </div>
+                </div>
+              </div>
+            </section>
 
+            <div className="border-t border-[#edf0e9]" />
+
+            {/* SECTION 3 : RATTACHEMENT */}
+            <section className="px-5 py-6 sm:px-7 lg:px-8">
+              <div className="mb-6 flex items-center gap-3">
+                <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-[#eef4e6]">
+                  <GitBranch className="size-5 text-[#556B2F]" />
                 </div>
 
-
-                {/* ==================================================
-                    COMPTE DE BASE
-                ================================================== */}
-
-                {/* ==================================================
-    COMPTE DE BASE
-================================================== */}
-
-{/* ==================================================
-    COMPTE DE BASE
-================================================== */}
-
-{/* ==================================================
-    COMPTE DE BASE
-================================================== */}
-
-{/* ==================================================
-    COMPTE DE BASE
-================================================== */}
-
-<div className="md:col-span-2">
-
-  <label className="mb-2 block text-sm font-medium text-foreground">
-    Compte de base
-
-    <span className="ml-1 text-red-500">
-      *
-    </span>
-  </label>
-
-  <button
-    type="button"
-    onClick={handleToggleBaseCompte}
-    className="flex items-center gap-3"
-  >
-
-    <span
-      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-        formData.isBaseCompte
-          ? 'bg-[#556B2F]'
-          : 'bg-gray-300'
-      }`}
-    >
-
-      <span
-        className={`inline-block size-5 rounded-full bg-white shadow-sm transition-transform ${
-          formData.isBaseCompte
-            ? 'translate-x-5'
-            : 'translate-x-0.5'
-        }`}
-      />
-
-    </span>
-
-    <span className="text-sm font-medium text-foreground">
-      {formData.isBaseCompte
-        ? 'Oui'
-        : 'Non'}
-    </span>
-
-  </button>
-
-</div>
-                {/* ==================================================
-                    ID COMPTE DE BASE
-                ================================================== */}
-
                 <div>
+                  <h2 className="text-sm font-bold text-[#172033] sm:text-base">
+                    Rattachement du compte
+                  </h2>
+                  <p className="mt-0.5 text-xs text-slate-500 sm:text-sm">
+                    Choisissez si le compte est principal ou rattaché à un autre
+                  </p>
+                </div>
+              </div>
 
+              <div className="grid grid-cols-1 gap-x-6 gap-y-5 md:grid-cols-2">
+                {/* COMPTE DE BASE */}
+                <div>
+                  <span className="mb-3 block text-sm font-medium text-[#334155]">
+                    Compte de base <span className="text-red-500">*</span>
+                  </span>
+
+                  <button
+                    type="button"
+                    role="switch"
+                    aria-checked={formData.isBaseCompte}
+                    onClick={handleToggleBaseCompte}
+                    className="flex min-h-11 items-center gap-3 rounded-lg border border-[#e5e9e1] px-3.5 py-2.5 transition hover:border-[#cbd8bc] hover:bg-[#fbfcf9]"
+                  >
+                    <span
+                      className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors ${
+                        formData.isBaseCompte
+                          ? 'bg-[#556B2F]'
+                          : 'bg-slate-300'
+                      }`}
+                    >
+                      <span
+                        className={`inline-block size-5 rounded-full bg-white shadow-sm transition-transform ${
+                          formData.isBaseCompte
+                            ? 'translate-x-5'
+                            : 'translate-x-0.5'
+                        }`}
+                      />
+                    </span>
+
+                    <span className="text-sm font-medium text-slate-700">
+                      {formData.isBaseCompte
+                        ? 'Oui, compte principal'
+                        : 'Non, compte rattaché'}
+                    </span>
+                  </button>
+                </div>
+
+                {/* ID COMPTE DE BASE */}
+                <div>
                   <label
                     htmlFor="baseCompteId"
-                    className="mb-2 block text-sm font-medium text-foreground"
+                    className="mb-2 block text-sm font-medium text-[#334155]"
                   >
-                    ID compte de base
+                    ID du compte de base
+                    {!formData.isBaseCompte && (
+                      <span className="ml-1 text-slate-400">(facultatif)</span>
+                    )}
                   </label>
 
                   <div className="relative">
-
-                    <Hash className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-
+                    <Hash className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-400" />
                     <input
                       id="baseCompteId"
                       name="baseCompteId"
                       type="number"
                       min="1"
+                      step="1"
                       value={formData.baseCompteId}
                       onChange={handleChange}
-                      placeholder="Entrez l'ID du compte de base"
+                      placeholder="Ex. : 1"
                       disabled={formData.isBaseCompte}
-                      className="h-11 w-full rounded-md border border-input bg-background pl-10 pr-3 text-sm outline-none transition focus:border-[#556B2F] focus:ring-1 focus:ring-[#556B2F] disabled:cursor-not-allowed disabled:bg-muted"
+                      className="h-11 w-full rounded-lg border border-[#dfe4e9] bg-white pl-10 pr-3 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-[#829663] focus:ring-2 focus:ring-[#556B2F]/10 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-400"
                     />
-
                   </div>
 
+                  <p className="mt-2 text-xs leading-5 text-slate-500">
+                    {formData.isBaseCompte
+                      ? 'Un compte principal ne dépend d’aucun autre compte.'
+                      : 'Renseignez l’identifiant du compte principal auquel ce compte est rattaché.'}
+                  </p>
                 </div>
-
               </div>
+            </section>
 
-            </div>
+            {/* FOOTER */}
+<div className="flex flex-col-reverse gap-3 border-t border-[#e9ede4] bg-[#fcfdfb] px-5 py-4 sm:flex-row sm:items-center sm:justify-end sm:px-7 lg:px-8">
+  <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+    <Button
+      type="button"
+      variant="outline"
+      onClick={handleCancel}
+      className="h-10 gap-2 rounded-lg border-[#dfe4e9] px-5 text-slate-600 hover:bg-slate-50"
+    >
+      <X className="size-4" />
+      Annuler
+    </Button>
 
-
-            {/* ==================================================
-                FOOTER
-            ================================================== */}
-
-            <div className="flex items-center justify-end gap-3 border-t border-border px-6 py-4">
-
-              {/* ANNULER */}
-
-              <Button
-                type="button"
-                variant="outline"
-                onClick={handleCancel}
-                className="h-10 min-w-[100px]"
-              >
-                Annuler
-              </Button>
-
-
-              {/* ENREGISTRER */}
-
-              <Button
-                type="submit"
-                className="h-10 min-w-[125px] bg-[#556B2F] hover:bg-[#465A27]"
-              >
-
-                <Save className="size-4" />
-
-                Enregistrer
-
-              </Button>
-
-            </div>
-
+    <Button
+      type="submit"
+      className="h-10 gap-2 rounded-lg bg-[#556B2F] px-5 font-semibold text-white shadow-sm hover:bg-[#465A27]"
+    >
+      <Save className="size-4" />
+      Enregistrer le compte
+    </Button>
+  </div>
+</div>
           </div>
-
         </form>
-
       </Container>
 
-
-      {/* ========================================================
-          MODALE SUCCÈS
-      ======================================================== */}
-
+      {/* MODALE SUCCÈS */}
       {showSuccessModal && (
-
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 px-4"
-          onClick={handleCloseSuccess}
+          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 px-4 py-6 backdrop-blur-[2px]"
+          onClick={() => setShowSuccessModal(false)}
         >
-
-          {/* ==================================================
-              CONTENU MODALE
-          ================================================== */}
-
           <div
-            className="relative w-full max-w-[380px] rounded-lg bg-white px-7 py-5 text-center shadow-2xl"
-            onClick={(event) =>
-              event.stopPropagation()
-            }
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="success-title"
+            className="w-full max-w-[390px] rounded-2xl border border-slate-100 bg-white p-7 text-center shadow-2xl"
+            onClick={(event) => event.stopPropagation()}
           >
-
-            {/* ==================================================
-                FERMER
-            ================================================== */}
-
             <button
               type="button"
-              onClick={handleCloseSuccess}
-              className="absolute right-3 top-3 text-gray-400 transition hover:text-gray-700"
+              onClick={() => setShowSuccessModal(false)}
+              className="absolute right-4 top-4 hidden"
               aria-label="Fermer"
             >
-
               <X className="size-4" />
-
             </button>
 
-
-            {/* ==================================================
-                ICÔNE SUCCÈS
-            ================================================== */}
-
-            <div className="flex justify-center">
-
-              <div className="flex size-12 items-center justify-center rounded-full bg-green-50">
-
-                <Check className="size-6 text-[#556B2F]" />
-
+            <div className="mx-auto flex size-14 items-center justify-center rounded-2xl bg-[#eef4e6]">
+              <div className="flex size-10 items-center justify-center rounded-full bg-[#556B2F]">
+                <Check className="size-5 text-white" />
               </div>
-
             </div>
 
-
-            {/* ==================================================
-                TITRE
-            ================================================== */}
-
-            <h2 className="mt-3 text-sm font-bold text-gray-900">
+            <h2
+              id="success-title"
+              className="mt-4 text-lg font-bold text-[#172033]"
+            >
               Compte ajouté
             </h2>
 
-
-            {/* ==================================================
-                MESSAGE
-            ================================================== */}
-
-            <p className="mt-2 text-xs text-gray-500">
-              Le compte a été ajouté avec succès.
+            <p className="mt-2 text-sm leading-6 text-slate-500">
+              Le formulaire a été validé. Le compte pourra être enregistré
+              définitivement après connexion à ton API ou à Supabase.
             </p>
 
-
-            {/* ==================================================
-                BOUTON OK
-            ================================================== */}
-
-            <div className="mt-4 flex justify-center">
-
-              <Button
-                type="button"
-                onClick={handleSuccessOk}
-                className="h-9 min-w-[70px] bg-[#556B2F] text-xs text-white hover:bg-[#465A27]"
-              >
-                OK
-              </Button>
-
-            </div>
-
+            <Button
+              type="button"
+              onClick={() => {
+                setShowSuccessModal(false);
+                navigate('/store-admin/accounts');
+              }}
+              className="mt-5 h-10 min-w-[100px] rounded-lg bg-[#556B2F] px-5 font-semibold text-white hover:bg-[#465A27]"
+            >
+              OK
+            </Button>
           </div>
-
         </div>
-
       )}
-
     </>
   );
 }

@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
@@ -8,6 +7,15 @@ import {
   Hash,
   Save,
   X,
+  ChevronRight,
+  Sprout,
+  CircleDollarSign,
+  Package,
+  ClipboardList,
+  ArrowLeft,
+  LoaderCircle,
+  Info,
+  CalendarRange,
 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
@@ -18,6 +26,8 @@ import { Container } from '@/components/common/container';
 ========================================================= */
 
 const API_URL = '/olive_app/season/save';
+
+const GREEN = '#556B2F';
 
 /* =========================================================
    TYPE DU FORMULAIRE
@@ -33,6 +43,74 @@ interface SaisonFormData {
   priceVente: string;
   nbreCaisses: string;
 }
+
+/* =========================================================
+   COMPOSANT CHAMP
+========================================================= */
+
+interface FieldProps {
+  label: string;
+  htmlFor: string;
+  icon?: React.ReactNode;
+  unit?: string;
+  hint?: string;
+  children: React.ReactNode;
+}
+
+function FormField({
+  label,
+  htmlFor,
+  icon,
+  unit,
+  hint,
+  children,
+}: FieldProps) {
+  return (
+    <div className="min-w-0">
+      <label
+        htmlFor={htmlFor}
+        className="mb-2 flex items-center gap-1.5 text-sm font-semibold text-slate-700"
+      >
+        {label}
+        <span className="text-red-500">*</span>
+      </label>
+
+      <div className="group relative">
+        {icon && (
+          <span className="pointer-events-none absolute left-3.5 top-1/2 z-10 flex -translate-y-1/2 items-center justify-center text-slate-400 transition-colors group-focus-within:text-[#556B2F]">
+            {icon}
+          </span>
+        )}
+
+        {children}
+
+        {unit && (
+          <span className="pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 rounded-md bg-slate-50 px-2 py-1 text-xs font-medium text-slate-500">
+            {unit}
+          </span>
+        )}
+      </div>
+
+      {hint && (
+        <p className="mt-1.5 text-xs text-slate-400">{hint}</p>
+      )}
+    </div>
+  );
+}
+
+/* =========================================================
+   CLASSES DES CHAMPS
+========================================================= */
+
+const inputClass =
+  'h-12 w-full rounded-xl border border-slate-200 bg-white text-sm text-slate-700 shadow-sm outline-none transition-all duration-200 placeholder:text-slate-400 hover:border-slate-300 focus:border-[#556B2F] focus:ring-4 focus:ring-[#556B2F]/10 disabled:cursor-not-allowed disabled:bg-slate-50';
+
+const iconInputClass = `${inputClass} pl-11 pr-4`;
+
+const unitInputClass = `${inputClass} pl-4 pr-20`;
+
+const selectClass =
+  'h-12 w-full appearance-none rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 shadow-sm outline-none transition-all duration-200 hover:border-slate-300 focus:border-[#556B2F] focus:ring-4 focus:ring-[#556B2F]/10';
 
 /* =========================================================
    COMPOSANT AJOUTER SAISON
@@ -80,7 +158,9 @@ export function AjouterSaisonPage() {
   ========================================================= */
 
   const handleCancel = () => {
-    navigate('/store-admin/saison');
+    if (!isSubmitting) {
+      navigate('/store-admin/saison');
+    }
   };
 
   /* =========================================================
@@ -96,7 +176,6 @@ export function AjouterSaisonPage() {
 
     setErrorMessage('');
 
-    // 1. Vérifier les champs obligatoires
     const requiredFields = [
       formData.beginDate,
       formData.endDate,
@@ -115,7 +194,6 @@ export function AjouterSaisonPage() {
       return;
     }
 
-    // 2. Vérifier les dates
     if (formData.endDate < formData.beginDate) {
       setErrorMessage(
         'La date de fin doit être postérieure ou égale à la date de début.',
@@ -123,7 +201,6 @@ export function AjouterSaisonPage() {
       return;
     }
 
-    // 3. Convertir les valeurs selon les types du backend
     const year = Number(formData.year);
     const statusId = Number(formData.statusId);
     const priceKilo = Number(formData.priceKilo);
@@ -131,7 +208,6 @@ export function AjouterSaisonPage() {
     const priceVente = Number(formData.priceVente);
     const nbreCaisses = Number(formData.nbreCaisses);
 
-    // 4. Valider les nombres
     if (
       !Number.isInteger(year) ||
       !Number.isInteger(statusId) ||
@@ -161,33 +237,26 @@ export function AjouterSaisonPage() {
       return;
     }
 
-    /*
-     * 5. Payload conforme aux champs métier du modèle Swagger.
-     *
-     * Les champs générés par le backend, comme createdDate,
-     * createdTime et createdUser, ne sont pas envoyés ici.
-     * L'identifiant id n'est pas fourni lors de la création.
-     */
     const payload = {
-  createdUser: '',
-  createdDate: new Date().toISOString().slice(0, 10),
-  createdTime: {
-    hour: 0,
-    minute: 0,
-    second: 0,
-    nano: 0,
-  },
-  searche: '',
-  beginDate: formData.beginDate,
-  endDate: formData.endDate,
-  statusId: Number(formData.statusId),
-  year: Number(formData.year),
-  priceKilo: Number(formData.priceKilo),
-  priceAchat: Number(formData.priceAchat),
-  priceVente: Number(formData.priceVente),
-  nbreCaisses: Number(formData.nbreCaisses),
-  id: {},
-};
+      createdUser: '',
+      createdDate: new Date().toISOString().slice(0, 10),
+      createdTime: {
+        hour: 0,
+        minute: 0,
+        second: 0,
+        nano: 0,
+      },
+      searche: '',
+      beginDate: formData.beginDate,
+      endDate: formData.endDate,
+      statusId,
+      year,
+      priceKilo,
+      priceAchat,
+      priceVente,
+      nbreCaisses,
+      id: {},
+    };
 
     console.log('URL API :', API_URL);
     console.log(
@@ -253,7 +322,6 @@ export function AjouterSaisonPage() {
         );
       }
 
-      // Succès uniquement après une réponse HTTP positive.
       setShowSuccessModal(true);
     } catch (error) {
       console.error(
@@ -278,7 +346,7 @@ export function AjouterSaisonPage() {
   };
 
   /* =========================================================
-     FERMETURE DU MODAL
+     MODAL DE SUCCÈS
   ========================================================= */
 
   const handleCloseSuccess = () => {
@@ -297,62 +365,133 @@ export function AjouterSaisonPage() {
   return (
     <>
       <Container>
-        <div className="py-5">
-          <h1 className="text-2xl font-bold text-foreground">
-            Ajouter une saison
-          </h1>
+        <div className="pb-5 pt-7">
+          {/* EN-TÊTE */}
+          <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
+            <div>
+              
 
-          <div className="mt-2 flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
-            <span>Accueil</span>
-            <span>/</span>
-            <span>Paramétrage</span>
-            <span>/</span>
-            <span>Saison</span>
-            <span>/</span>
-            <span className="font-medium text-foreground">
-              Ajouter
-            </span>
+              <div className="flex items-center gap-3">
+                <div className="flex size-12 shrink-0 items-center justify-center rounded-2xl bg-[#556B2F]/10 text-[#556B2F]">
+                  <Sprout className="size-6" />
+                </div>
+
+                <div>
+                  <h1 className="text-2xl font-bold tracking-tight text-slate-800 sm:text-3xl">
+                    Ajouter une saison
+                  </h1>
+
+                  <p className="mt-1 text-sm text-slate-500">
+                    Configurez les informations de votre nouvelle saison oléicole.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <Button
+  type="button"
+  variant="outline"
+  onClick={handleCancel}
+  disabled={isSubmitting}
+  className="h-10 gap-2 self-start rounded-xl border border-[#DCE8CF] bg-[#F4F8EF] text-[#556B2F] transition hover:border-[#C7D9B3] hover:bg-[#EAF2E0] hover:text-[#435B2B] sm:self-center"
+>
+  <ArrowLeft className="size-4 text-[#718747]" />
+  Retour aux saisons
+</Button>
           </div>
         </div>
       </Container>
 
       <Container>
-        <form onSubmit={handleSubmit}>
+        <form onSubmit={handleSubmit} className="pb-8">
+          {/* MESSAGE D'ERREUR */}
           {errorMessage && (
             <div
               role="alert"
-              className="mb-4 rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
+              className="mb-5 flex items-start gap-3 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700 shadow-sm"
             >
-              {errorMessage}
+              <Info className="mt-0.5 size-5 shrink-0" />
+
+              <div>
+                <p className="font-semibold">
+                  Impossible d'enregistrer la saison
+                </p>
+
+                <p className="mt-1 leading-5">{errorMessage}</p>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setErrorMessage('')}
+                className="ml-auto rounded-lg p-1 text-red-400 transition hover:bg-red-100 hover:text-red-700"
+                aria-label="Fermer le message d'erreur"
+              >
+                <X className="size-4" />
+              </button>
             </div>
           )}
 
-          <div className="rounded-xl border border-border bg-white shadow-sm">
-            <div className="border-b border-border px-6 py-5">
-              <h2 className="text-lg font-bold text-foreground">
-                Informations de la saison
-              </h2>
+          <div className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-[0_8px_30px_rgba(15,23,42,0.045)]">
+            {/* EN-TÊTE DE LA CARTE */}
+            <div className="relative overflow-hidden border-b border-slate-100 bg-gradient-to-r from-[#f6f8f1] via-white to-white px-5 py-6 sm:px-8">
+              <div className="absolute right-0 top-0 h-full w-1 bg-[#556B2F]" />
 
-              <p className="mt-1 text-sm text-muted-foreground">
-                Veuillez remplir les informations de la saison.
-              </p>
+              <div className="flex items-start gap-4">
+                <div className="flex size-11 shrink-0 items-center justify-center rounded-xl border border-[#556B2F]/10 bg-white text-[#556B2F] shadow-sm">
+                  <ClipboardList className="size-5" />
+                </div>
+
+                <div className="min-w-0 flex-1">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <h2 className="text-lg font-bold text-slate-800">
+                      Informations de la saison
+                    </h2>
+
+                    <span className="rounded-full bg-[#556B2F]/10 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-[#556B2F]">
+                      Nouveau
+                    </span>
+                  </div>
+
+                  <p className="mt-1.5 text-sm leading-6 text-slate-500">
+                    Renseignez les dates, le statut, les tarifs et la capacité de stockage.
+                  </p>
+
+                  <p className="mt-2 text-xs text-slate-400">
+                    Les champs marqués d'un astérisque (
+                    <span className="font-bold text-red-500">*</span>
+                    ) sont obligatoires.
+                  </p>
+                </div>
+              </div>
             </div>
 
-            <div className="px-6 py-6">
-              <div className="grid grid-cols-1 gap-x-6 gap-y-5 md:grid-cols-2">
-                {/* Année */}
-                <div>
-                  <label
+            <div className="space-y-8 p-5 sm:p-8">
+              {/* SECTION 1 : INFORMATIONS GÉNÉRALES */}
+              <section>
+                <div className="mb-5 flex items-center gap-3">
+                  <div className="flex size-9 items-center justify-center rounded-xl bg-[#556B2F]/10 text-[#556B2F]">
+                    <CalendarRange className="size-[18px]" />
+                  </div>
+
+                  <div>
+                    <h3 className="text-sm font-bold text-slate-800">
+                      Informations générales
+                    </h3>
+
+                    <p className="mt-0.5 text-xs text-slate-400">
+                      Identifiez la saison et définissez sa période.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 gap-x-6 gap-y-5 md:grid-cols-2">
+                  {/* ANNÉE */}
+                  <FormField
+                    label="Année de la saison"
                     htmlFor="year"
-                    className="mb-2 block text-sm font-medium text-foreground"
+                    icon={<Hash className="size-[18px]" />}
+                    hint="Exemple : 2026"
                   >
-                    Année de la saison
-                    <span className="ml-1 text-red-500">*</span>
-                  </label>
-
-                  <div className="relative">
-                    <Hash className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-
                     <input
                       id="year"
                       name="year"
@@ -364,72 +503,63 @@ export function AjouterSaisonPage() {
                       onChange={handleChange}
                       placeholder="Entrez l'année"
                       required
-                      className="h-11 w-full rounded-md border border-input bg-background pl-10 pr-3 text-sm outline-none transition focus:border-[#556B2F] focus:ring-1 focus:ring-[#556B2F]"
+                      className={iconInputClass}
                     />
-                  </div>
-                </div>
+                  </FormField>
 
-                {/* Statut */}
-                <div>
-                  <label
+                  {/* STATUT */}
+                  <FormField
+                    label="Statut"
                     htmlFor="statusId"
-                    className="mb-2 block text-sm font-medium text-foreground"
+                    icon={
+                      <span
+                        className={`size-2.5 rounded-full ${
+                          formData.statusId === '1'
+                            ? 'bg-emerald-500'
+                            : 'bg-slate-400'
+                        }`}
+                      />
+                    }
+                    hint="Détermine l'état actuel de la saison."
                   >
-                    Statut
-                    <span className="ml-1 text-red-500">*</span>
-                  </label>
+                    <select
+                      id="statusId"
+                      name="statusId"
+                      value={formData.statusId}
+                      onChange={handleChange}
+                      required
+                      className={`${iconInputClass} appearance-none pr-10`}
+                    >
+                      <option value="1">En cours</option>
+                      <option value="2">Clôturée</option>
+                    </select>
+                  </FormField>
 
-                  <select
-                    id="statusId"
-                    name="statusId"
-                    value={formData.statusId}
-                    onChange={handleChange}
-                    required
-                    className="h-11 w-full rounded-md border border-input bg-background px-3 text-sm outline-none transition focus:border-[#556B2F] focus:ring-1 focus:ring-[#556B2F]"
-                  >
-                    <option value="1">En cours</option>
-                    <option value="2">Clôturée</option>
-                  </select>
-                </div>
-
-                {/* Date de début */}
-                <div>
-                  <label
+                  {/* DATE DÉBUT */}
+                  <FormField
+                    label="Date de début"
                     htmlFor="beginDate"
-                    className="mb-2 block text-sm font-medium text-foreground"
+                    icon={<CalendarDays className="size-[18px]" />}
                   >
-                    Date début saison
-                    <span className="ml-1 text-red-500">*</span>
-                  </label>
-
-                  <div className="relative">
-                    <CalendarDays className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-
                     <input
                       id="beginDate"
                       name="beginDate"
                       type="date"
                       value={formData.beginDate}
+                      max={formData.endDate || undefined}
                       onChange={handleChange}
                       required
-                      className="h-11 w-full rounded-md border border-input bg-background pl-10 pr-3 text-sm outline-none transition focus:border-[#556B2F] focus:ring-1 focus:ring-[#556B2F]"
+                      className={iconInputClass}
                     />
-                  </div>
-                </div>
+                  </FormField>
 
-                {/* Date de fin */}
-                <div>
-                  <label
+                  {/* DATE FIN */}
+                  <FormField
+                    label="Date de fin"
                     htmlFor="endDate"
-                    className="mb-2 block text-sm font-medium text-foreground"
+                    icon={<CalendarDays className="size-[18px]" />}
+                    hint="Doit être égale ou postérieure à la date de début."
                   >
-                    Date fin saison
-                    <span className="ml-1 text-red-500">*</span>
-                  </label>
-
-                  <div className="relative">
-                    <CalendarDays className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-
                     <input
                       id="endDate"
                       name="endDate"
@@ -438,22 +568,41 @@ export function AjouterSaisonPage() {
                       value={formData.endDate}
                       onChange={handleChange}
                       required
-                      className="h-11 w-full rounded-md border border-input bg-background pl-10 pr-3 text-sm outline-none transition focus:border-[#556B2F] focus:ring-1 focus:ring-[#556B2F]"
+                      className={iconInputClass}
                     />
+                  </FormField>
+                </div>
+              </section>
+
+              {/* SÉPARATEUR */}
+              <div className="border-t border-dashed border-slate-200" />
+
+              {/* SECTION 2 : TARIFICATION */}
+              <section>
+                <div className="mb-5 flex items-center gap-3">
+                  <div className="flex size-9 items-center justify-center rounded-xl bg-amber-50 text-amber-600">
+                    <CircleDollarSign className="size-[18px]" />
+                  </div>
+
+                  <div>
+                    <h3 className="text-sm font-bold text-slate-800">
+                      Tarification
+                    </h3>
+
+                    <p className="mt-0.5 text-xs text-slate-400">
+                      Définissez les prix de production, d'achat et de vente.
+                    </p>
                   </div>
                 </div>
 
-                {/* Prix du kilo */}
-                <div>
-                  <label
+                <div className="grid grid-cols-1 gap-x-6 gap-y-5 md:grid-cols-2">
+                  {/* PRIX KILO */}
+                  <FormField
+                    label="Prix de production d'un kilo d'olives"
                     htmlFor="priceKilo"
-                    className="mb-2 block text-sm font-medium text-foreground"
+                    icon={<CircleDollarSign className="size-[18px]" />}
+                    unit="DT/kg"
                   >
-                    Prix production d'un kilo d'olives
-                    <span className="ml-1 text-red-500">*</span>
-                  </label>
-
-                  <div className="relative">
                     <input
                       id="priceKilo"
                       name="priceKilo"
@@ -464,26 +613,17 @@ export function AjouterSaisonPage() {
                       onChange={handleChange}
                       placeholder="Ex. 0.80"
                       required
-                      className="h-11 w-full rounded-md border border-input bg-background px-3 pr-14 text-sm outline-none transition focus:border-[#556B2F] focus:ring-1 focus:ring-[#556B2F]"
+                      className={`${unitInputClass} pl-11`}
                     />
+                  </FormField>
 
-                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
-                      DT/kg
-                    </span>
-                  </div>
-                </div>
-
-                {/* Prix d'achat */}
-                <div>
-                  <label
+                  {/* PRIX ACHAT */}
+                  <FormField
+                    label="Prix d'achat d'un litre d'huile"
                     htmlFor="priceAchat"
-                    className="mb-2 block text-sm font-medium text-foreground"
+                    icon={<CircleDollarSign className="size-[18px]" />}
+                    unit="DT/L"
                   >
-                    Prix d'achat d'un litre d'huile
-                    <span className="ml-1 text-red-500">*</span>
-                  </label>
-
-                  <div className="relative">
                     <input
                       id="priceAchat"
                       name="priceAchat"
@@ -494,26 +634,17 @@ export function AjouterSaisonPage() {
                       onChange={handleChange}
                       placeholder="Ex. 18.00"
                       required
-                      className="h-11 w-full rounded-md border border-input bg-background px-3 pr-12 text-sm outline-none transition focus:border-[#556B2F] focus:ring-1 focus:ring-[#556B2F]"
+                      className={`${unitInputClass} pl-11`}
                     />
+                  </FormField>
 
-                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
-                      DT/L
-                    </span>
-                  </div>
-                </div>
-
-                {/* Prix de vente */}
-                <div>
-                  <label
+                  {/* PRIX VENTE */}
+                  <FormField
+                    label="Prix de vente d'un litre d'huile"
                     htmlFor="priceVente"
-                    className="mb-2 block text-sm font-medium text-foreground"
+                    icon={<CircleDollarSign className="size-[18px]" />}
+                    unit="DT/L"
                   >
-                    Prix de vente d'un litre d'huile
-                    <span className="ml-1 text-red-500">*</span>
-                  </label>
-
-                  <div className="relative">
                     <input
                       id="priceVente"
                       name="priceVente"
@@ -524,113 +655,163 @@ export function AjouterSaisonPage() {
                       onChange={handleChange}
                       placeholder="Ex. 20.00"
                       required
-                      className="h-11 w-full rounded-md border border-input bg-background px-3 pr-12 text-sm outline-none transition focus:border-[#556B2F] focus:ring-1 focus:ring-[#556B2F]"
+                      className={`${unitInputClass} pl-11`}
                     />
+                  </FormField>
+                </div>
+              </section>
 
-                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
-                      DT/L
-                    </span>
+              {/* SÉPARATEUR */}
+              <div className="border-t border-dashed border-slate-200" />
+
+              {/* SECTION 3 : CAPACITÉ */}
+              <section>
+                <div className="mb-5 flex items-center gap-3">
+                  <div className="flex size-9 items-center justify-center rounded-xl bg-blue-50 text-blue-600">
+                    <Package className="size-[18px]" />
+                  </div>
+
+                  <div>
+                    <h3 className="text-sm font-bold text-slate-800">
+                      Capacité de stockage
+                    </h3>
+
+                    <p className="mt-0.5 text-xs text-slate-400">
+                      Indiquez le nombre de caisses disponibles pour la saison.
+                    </p>
                   </div>
                 </div>
 
-                {/* Nombre de caisses */}
-                <div>
-                  <label
+                <div className="grid grid-cols-1 gap-x-6 gap-y-5 md:grid-cols-2">
+                  <FormField
+                    label="Nombre de caisses"
                     htmlFor="nbreCaisses"
-                    className="mb-2 block text-sm font-medium text-foreground"
+                    icon={<Package className="size-[18px]" />}
+                    hint="Saisissez un nombre entier positif ou nul."
                   >
-                    Nombre de caisses
-                    <span className="ml-1 text-red-500">*</span>
-                  </label>
-
-                  <input
-                    id="nbreCaisses"
-                    name="nbreCaisses"
-                    type="number"
-                    min="0"
-                    step="1"
-                    value={formData.nbreCaisses}
-                    onChange={handleChange}
-                    placeholder="Entrez le nombre de caisses"
-                    required
-                    className="h-11 w-full rounded-md border border-input bg-background px-3 text-sm outline-none transition focus:border-[#556B2F] focus:ring-1 focus:ring-[#556B2F]"
-                  />
+                    <input
+                      id="nbreCaisses"
+                      name="nbreCaisses"
+                      type="number"
+                      min="0"
+                      step="1"
+                      value={formData.nbreCaisses}
+                      onChange={handleChange}
+                      placeholder="Ex. 500"
+                      required
+                      className={iconInputClass}
+                    />
+                  </FormField>
                 </div>
-              </div>
+              </section>
             </div>
 
-            {/* Boutons */}
-            <div className="flex items-center justify-end gap-3 border-t border-border px-6 py-4">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={handleCancel}
-                disabled={isSubmitting}
-                className="h-10 min-w-[100px]"
-              >
-                Annuler
-              </Button>
+            {/* PIED DE FORMULAIRE */}
+            <div className="flex flex-col gap-4 border-t border-slate-100 bg-slate-50/70 px-5 py-5 sm:flex-row sm:items-center sm:justify-between sm:px-8">
+              <p className="flex items-center gap-2 text-xs text-slate-400">
+                <Info className="size-4 shrink-0" />
+                Vérifiez les informations avant l'enregistrement.
+              </p>
 
-              <Button
-                type="submit"
-                disabled={isSubmitting}
-                className="h-10 min-w-[125px] bg-[#556B2F] hover:bg-[#465A27] disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                <Save className="size-4" />
-                {isSubmitting ? 'Enregistrement...' : 'Enregistrer'}
-              </Button>
+              <div className="flex flex-col-reverse gap-3 sm:flex-row">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={handleCancel}
+                  disabled={isSubmitting}
+                  className="h-11 min-w-[120px] gap-2 rounded-xl border-slate-200 bg-white px-5 font-semibold text-slate-600 shadow-sm transition hover:border-slate-300 hover:bg-slate-100"
+                >
+                  <X className="size-4" />
+                  Annuler
+                </Button>
+
+                <Button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="h-11 min-w-[155px] gap-2 rounded-xl border border-[#465A27] bg-[#556B2F] px-6 font-semibold text-white shadow-[0_4px_12px_rgba(85,107,47,0.18)] transition-all hover:-translate-y-0.5 hover:bg-[#465A27] hover:shadow-md disabled:translate-y-0 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {isSubmitting ? (
+                    <>
+                      <LoaderCircle className="size-4 animate-spin" />
+                      Enregistrement...
+                    </>
+                  ) : (
+                    <>
+                      <Save className="size-4" />
+                      Enregistrer la saison
+                    </>
+                  )}
+                </Button>
+              </div>
             </div>
           </div>
         </form>
       </Container>
 
-      {/* Modal de confirmation */}
+      {/* =====================================================
+          MODAL DE SUCCÈS
+      ===================================================== */}
+
       {showSuccessModal && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 px-4"
+          className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/40 px-4 py-6 backdrop-blur-[3px]"
           onClick={handleCloseSuccess}
         >
           <div
             role="dialog"
             aria-modal="true"
             aria-labelledby="success-title"
-            className="relative w-full max-w-[380px] rounded-lg bg-white px-7 py-5 text-center shadow-2xl"
+            className="relative w-full max-w-[420px] overflow-hidden rounded-3xl border border-white/70 bg-white p-7 text-center shadow-[0_25px_80px_rgba(15,23,42,0.22)] sm:p-9"
             onClick={(event) => event.stopPropagation()}
           >
             <button
               type="button"
               onClick={handleCloseSuccess}
-              className="absolute right-3 top-3 text-gray-400 transition hover:text-gray-700"
+              className="absolute right-4 top-4 flex size-9 items-center justify-center rounded-xl text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
               aria-label="Fermer"
             >
-              <X className="size-4" />
+              <X className="size-5" />
             </button>
 
-            <div className="flex justify-center">
-              <div className="flex size-12 items-center justify-center rounded-full bg-green-50">
-                <Check className="size-6 text-[#556B2F]" />
+            <div className="mx-auto flex size-[76px] items-center justify-center rounded-full bg-[#556B2F]/10">
+              <div className="flex size-14 items-center justify-center rounded-full bg-[#556B2F] shadow-lg shadow-[#556B2F]/20">
+                <Check className="size-7 text-white" strokeWidth={3} />
               </div>
             </div>
 
+            <span className="mt-5 inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-700">
+              <Check className="size-3.5" />
+              Enregistrement réussi
+            </span>
+
             <h2
               id="success-title"
-              className="mt-3 text-sm font-bold text-gray-900"
+              className="mt-4 text-xl font-bold tracking-tight text-slate-800"
             >
-              Saison ajoutée
+              Saison ajoutée !
             </h2>
 
-            <p className="mt-2 text-xs text-gray-500">
-              La saison a été ajoutée avec succès.
+            <p className="mx-auto mt-2 max-w-[290px] text-sm leading-6 text-slate-500">
+              La nouvelle saison a été enregistrée avec succès. Vous pouvez maintenant consulter la liste des saisons.
             </p>
 
-            <div className="mt-4 flex justify-center">
+            <div className="mt-7 flex flex-col gap-3">
               <Button
                 type="button"
                 onClick={handleSuccessOk}
-                className="h-9 min-w-[70px] bg-[#556B2F] text-xs text-white hover:bg-[#465A27]"
+                className="h-11 w-full gap-2 rounded-xl bg-[#556B2F] font-semibold text-white shadow-sm transition hover:bg-[#465A27]"
               >
-                OK
+                <Check className="size-4" />
+                Voir les saisons
               </Button>
+
+              <button
+                type="button"
+                onClick={handleCloseSuccess}
+                className="py-2 text-sm font-medium text-slate-500 transition hover:text-slate-800"
+              >
+                Rester sur cette page
+              </button>
             </div>
           </div>
         </div>

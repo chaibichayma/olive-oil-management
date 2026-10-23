@@ -180,49 +180,7 @@ export function OuvrierTable({
 
         {/* STATISTIQUES */}
 
-        <div className="grid grid-cols-1 gap-3 border-b border-[#edf0f2] bg-[#fafcf9] px-4 py-4 sm:grid-cols-2 xl:grid-cols-4">
-
-          <div className="flex h-[82px] items-center gap-4 rounded-xl border border-[#e5e7eb] bg-white px-5">
-            <div className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-[#eef4e6]">
-              <Users className="size-5 text-[#556B2F]" />
-            </div>
-            <div>
-              <p className="text-xl font-bold text-[#172033]">{totalOuvriers}</p>
-              <p className="mt-1 text-xs text-[#7b8798]">Ouvriers au total</p>
-            </div>
-          </div>
-
-          <div className="flex h-[82px] items-center gap-4 rounded-xl border border-[#e5e7eb] bg-white px-5">
-            <div className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-[#e8f7ed]">
-              <CheckCircle2 className="size-5 text-[#16833b]" />
-            </div>
-            <div>
-              <p className="text-xl font-bold text-[#172033]">{ouvriersActifs}</p>
-              <p className="mt-1 text-xs text-[#7b8798]">Ouvriers actifs</p>
-            </div>
-          </div>
-
-          <div className="flex h-[82px] items-center gap-4 rounded-xl border border-[#e5e7eb] bg-white px-5">
-            <div className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-[#fff3df]">
-              <Clock3 className="size-5 text-[#d97706]" />
-            </div>
-            <div>
-              <p className="text-xl font-bold text-[#172033]">{ouvriersConge}</p>
-              <p className="mt-1 text-xs text-[#7b8798]">Ouvriers en congé</p>
-            </div>
-          </div>
-
-          <div className="flex h-[82px] items-center gap-4 rounded-xl border border-[#e5e7eb] bg-white px-5">
-            <div className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-[#ffecef]">
-              <XCircle className="size-5 text-[#dc2626]" />
-            </div>
-            <div>
-              <p className="text-xl font-bold text-[#172033]">{ouvriersInactifs}</p>
-              <p className="mt-1 text-xs text-[#7b8798]">Ouvriers inactifs</p>
-            </div>
-          </div>
-
-        </div>
+        
 
         {/* FILTRES + ACTIONS */}
 
@@ -236,7 +194,7 @@ export function OuvrierTable({
               type="button"
               onClick={() => setStatusFilter('Tous')}
               aria-pressed={statusFilter === 'Tous'}
-              className={`flex h-10 items-center gap-2 rounded-lg border px-3 transition ${
+              className={`flex h-11 min-w-[130px] items-center justify-center gap-3 rounded-lg border px-4 transition ${
                 statusFilter === 'Tous'
                   ? 'border-[#c9d9b6] bg-[#f1f6eb] text-[#556B2F]'
                   : 'border-[#e5e7eb] bg-white text-[#334155] hover:border-[#c9d9b6]'
@@ -255,7 +213,7 @@ export function OuvrierTable({
               type="button"
               onClick={() => setStatusFilter('Actif')}
               aria-pressed={statusFilter === 'Actif'}
-              className={`flex h-10 items-center gap-2 rounded-lg border px-3 transition ${
+              className={`flex h-11 min-w-[130px] items-center justify-center gap-3 rounded-lg border px-4 transition ${
                 statusFilter === 'Actif'
                   ? 'border-[#b8e3c7] bg-[#f0faf3] text-[#16833b]'
                   : 'border-[#e5e7eb] bg-white text-[#334155] hover:border-[#b8e3c7]'
@@ -274,7 +232,7 @@ export function OuvrierTable({
               type="button"
               onClick={() => setStatusFilter('En congé')}
               aria-pressed={statusFilter === 'En congé'}
-              className={`flex h-10 items-center gap-2 rounded-lg border px-3 transition ${
+              className={`flex h-11 min-w-[150px] items-center justify-center gap-3 rounded-lg border px-4 transition ${
                 statusFilter === 'En congé'
                   ? 'border-[#fed7aa] bg-[#fff7ed] text-[#c2410c]'
                   : 'border-[#e5e7eb] bg-white text-[#334155] hover:border-[#fed7aa]'
@@ -293,7 +251,7 @@ export function OuvrierTable({
               type="button"
               onClick={() => setStatusFilter('Inactif')}
               aria-pressed={statusFilter === 'Inactif'}
-              className={`flex h-10 items-center gap-2 rounded-lg border px-3 transition ${
+              className={`flex h-11 min-w-[130px] items-center justify-center gap-3 rounded-lg border px-4 transition ${
                 statusFilter === 'Inactif'
                   ? 'border-[#f5c9cd] bg-[#fff4f4] text-[#dc2635]'
                   : 'border-[#e5e7eb] bg-white text-[#334155] hover:border-[#f5c9cd]'
@@ -309,27 +267,25 @@ export function OuvrierTable({
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
+  <Button
+    type="button"
+    variant="outline"
+    onClick={handleReset}
+    className="h-10 rounded-lg border border-[#F3D2B3] bg-[#FFF7ED] px-5 text-xs font-semibold text-[#C2672B] transition hover:border-[#E9B98F] hover:bg-[#FFEDD8] hover:text-[#A94F1D]"
+  >
+    <RefreshCcw className="mr-1.5 size-4" />
+    Réinitialiser
+  </Button>
 
-            <Button
-              type="button"
-              variant="outline"
-              onClick={handleReset}
-              className="h-10 rounded-lg border-[#dfe4e9] bg-white px-4 text-xs font-semibold text-[#334155] hover:border-[#556B2F] hover:bg-[#f5f8f1] hover:text-[#556B2F]"
-            >
-              <RefreshCcw className="mr-1.5 size-4" />
-              Réinitialiser
-            </Button>
-
-            <Button
-              type="button"
-              onClick={handleExport}
-              className="h-10 rounded-lg border border-[#087443] bg-[#087443] px-4 text-xs font-semibold text-white hover:bg-[#066238]"
-            >
-              <Download className="mr-1.5 size-4" />
-              Exporter
-            </Button>
-
-          </div>
+  <Button
+    type="button"
+    onClick={handleExport}
+    className="h-10 rounded-lg border border-[#DCE8CF] bg-[#F4F8EF] px-5 text-xs font-semibold text-[#556B2F] transition hover:border-[#C7D9B3] hover:bg-[#EAF2E0] hover:text-[#435B2B]"
+  >
+    <Download className="mr-1.5 size-4" />
+    Exporter
+  </Button>
+</div>
         </div>
 
         {/* CARTES OUVRIERS */}

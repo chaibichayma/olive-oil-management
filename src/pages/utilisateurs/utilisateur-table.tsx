@@ -291,77 +291,9 @@ export function UtilisateurTable({
 
   return (
     <div className="w-full min-w-0 space-y-4">
-
-      {/* STATISTIQUES */}
-
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
-
-        <div className="flex h-[82px] items-center gap-4 rounded-xl border border-[#e5e7eb] bg-white px-5 shadow-sm">
-          <div className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-[#eef4e6]">
-            <Users className="size-6 text-[#66823A]" />
-          </div>
-          <div>
-            <p className="text-xl font-bold text-[#172033]">
-              {totalUsers}
-            </p>
-            <p className="text-xs text-[#7b8798]">
-              Utilisateurs au total
-            </p>
-          </div>
-        </div>
-
-        <div className="flex h-[82px] items-center gap-4 rounded-xl border border-[#e5e7eb] bg-white px-5 shadow-sm">
-          <div className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-[#e8f7ed]">
-            <CheckCircle2 className="size-6 text-[#16833b]" />
-          </div>
-          <div>
-            <p className="text-xl font-bold text-[#172033]">
-              {activeUsers}
-            </p>
-            <p className="text-xs text-[#7b8798]">
-              Utilisateurs actifs
-            </p>
-          </div>
-        </div>
-
-        <div className="flex h-[82px] items-center gap-4 rounded-xl border border-[#e5e7eb] bg-white px-5 shadow-sm">
-          <div className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-[#ffecef]">
-            <X className="size-6 text-[#ef3340]" />
-          </div>
-          <div>
-            <p className="text-xl font-bold text-[#172033]">
-              {inactiveUsers}
-            </p>
-            <p className="text-xs text-[#7b8798]">
-              Utilisateurs inactifs
-            </p>
-          </div>
-        </div>
-
-        <div className="flex h-[82px] items-center gap-4 rounded-xl border border-[#e5e7eb] bg-white px-5 shadow-sm">
-          <div className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-[#edf6ff]">
-            <ShieldCheck className="size-6 text-[#62a5f5]" />
-          </div>
-          <div>
-            <p className="text-xl font-bold text-[#172033]">
-              {usersWithEmail}
-            </p>
-            <p className="text-xs text-[#7b8798]">
-              Utilisateurs avec email
-            </p>
-          </div>
-        </div>
-
-      </div>
-
       {/* CONTENEUR PRINCIPAL */}
 
       <div className="overflow-hidden rounded-xl border border-[#e5e7eb] bg-[#f4f8fb] shadow-[0_2px_12px_rgba(15,23,42,0.04)]">
-
-        {/* TITRE */}
-
-        
-
         {/* FILTRES + RÉINITIALISER + EXPORTER */}
 
         <div className="flex flex-col gap-3 border-b border-[#e5e7eb] bg-white px-4 py-4 sm:px-5 xl:flex-row xl:items-center xl:justify-between">
@@ -376,7 +308,7 @@ export function UtilisateurTable({
               type="button"
               onClick={() => setStatusFilter('Tous')}
               aria-pressed={statusFilter === 'Tous'}
-              className={`flex h-10 items-center gap-2 rounded-md border px-3 transition ${
+              className={`flex h-10 min-w-[140px] items-center gap-2 rounded-md border px-4 transition ${
                 statusFilter === 'Tous'
                   ? 'border-[#c9d9b6] bg-[#f1f6eb] text-[#556B2F]'
                   : 'border-[#e5e7eb] bg-white text-[#334155] hover:border-[#c9d9b6]'
@@ -395,7 +327,7 @@ export function UtilisateurTable({
               type="button"
               onClick={() => setStatusFilter('Actifs')}
               aria-pressed={statusFilter === 'Actifs'}
-              className={`flex h-10 items-center gap-2 rounded-md border px-3 transition ${
+              className={`flex h-10 min-w-[200px] items-center gap-2 rounded-md border px-3 transition ${
                 statusFilter === 'Actifs'
                   ? 'border-[#b8e3c7] bg-[#f0faf3] text-[#16833b]'
                   : 'border-[#e5e7eb] bg-white text-[#334155] hover:border-[#b8e3c7]'
@@ -450,28 +382,29 @@ export function UtilisateurTable({
 
           {/* BOUTONS */}
 
-          <div className="flex shrink-0 items-center gap-2">
+          <div className="flex shrink-0 items-center gap-3">
+  {/* RÉINITIALISER - ORANGE CLAIR */}
+  <Button
+    type="button"
+    variant="outline"
+    onClick={handleReset}
+    className="h-10 min-w-[150px] gap-2 rounded-lg border border-orange-200 bg-orange-50 px-6 text-sm font-semibold text-orange-700 transition-colors hover:border-orange-300 hover:bg-orange-100 hover:text-orange-800"
+  >
+    <RefreshCcw className="size-4" />
+    Réinitialiser
+  </Button>
 
-            <Button
-              type="button"
-              variant="outline"
-              onClick={handleReset}
-              className="h-10 gap-2 rounded-lg border-[#dfe4e9] px-3 text-xs text-[#334155] hover:border-[#556B2F] hover:bg-[#f5f8f1] hover:text-[#556B2F]"
-            >
-              <RefreshCcw className="size-3.5" />
-              Réinitialiser
-            </Button>
-
-            <Button
-              type="button"
-              onClick={handleExport}
-              className="h-10 gap-2 rounded-lg bg-[#087443] px-4 text-xs font-semibold text-white hover:bg-[#066239]"
-            >
-              <Download className="size-3.5" />
-              Exporter
-            </Button>
-
-          </div>
+  {/* EXPORTER - VERT TRÈS CLAIR */}
+  <Button
+    type="button"
+    variant="outline"
+    onClick={handleExport}
+    className="h-10 min-w-[140px] gap-2 rounded-lg border border-[#DCE8CF] bg-[#F4F8EF] px-6 text-sm font-semibold text-[#556B2F] shadow-sm transition-colors hover:border-[#C7D9B3] hover:bg-[#EAF2E0] hover:text-[#435B2B]"
+  >
+    <Download className="size-4" />
+    Exporter
+  </Button>
+</div>
 
         </div>
 
@@ -624,16 +557,7 @@ export function UtilisateurTable({
             </div>
           )}
 
-          {/* PIED DE PAGE */}
-
-          <div className="mt-4 flex flex-col gap-2 border-t border-[#e5e7eb] pt-4 text-xs text-[#64748b] sm:flex-row sm:items-center sm:justify-between">
-            <p>
-              {filteredUtilisateurs.length} utilisateur(s) affiché(s) sur {totalUsers}
-            </p>
-            <p className="text-[#94a3b8]">
-              Gestion des utilisateurs
-            </p>
-          </div>
+          
 
         </div>
 

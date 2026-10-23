@@ -1,22 +1,24 @@
-import { useCallback, useEffect, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 import {
   CalendarDays,
   Check,
+  ChevronRight,
   CircleDollarSign,
+  Hash,
+  Leaf,
+  Package,
   Save,
   ShoppingCart,
   X,
-  Package,
-  Hash,
+  Sprout,
+  Clock3,
 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Container } from '@/components/common/container';
-
-const API_URL = '/olive_app/season';
-const LIST_API_URL = `${API_URL}/getListBean`;
 
 interface SaisonFormData {
   beginDate: string;
@@ -29,215 +31,27 @@ interface SaisonFormData {
   nbreCaisses: string;
 }
 
-/**
- * L'identifiant est conservé tel que renvoyé par le backend.
- * Cela évite de supposer qu'il est toujours numérique.
- */
-interface SaisonApi {
-  id?: unknown;
-  beginDate?: string;
-  endDate?: string;
-  statusId?: number | string;
-  year?: number | string;
-  priceKilo?: number | string;
-  priceAchat?: number | string;
-  priceVente?: number | string;
-  nbreCaisses?: number | string;
-  createdUser?: string;
-  createdDate?: string;
-  createdTime?: unknown;
-  searche?: string;
-  [key: string]: unknown;
-}
-
 const initialFormData: SaisonFormData = {
-  beginDate: '',
-  endDate: '',
+  beginDate: '2026-09-01',
+  endDate: '2027-03-31',
   statusId: '1',
-  year: '',
-  priceKilo: '',
-  priceAchat: '',
-  priceVente: '',
-  nbreCaisses: '',
+  year: '2026',
+  priceKilo: '0.80',
+  priceAchat: '18.00',
+  priceVente: '20.00',
+  nbreCaisses: '250',
 };
-
-function getErrorMessage(data: unknown): string {
-  if (typeof data === 'string' && data.trim()) {
-    return data;
-  }
-
-  if (data && typeof data === 'object') {
-    const error = data as Record<string, unknown>;
-
-    for (const key of ['message', 'detail', 'error', 'title']) {
-      if (typeof error[key] === 'string' && error[key]) {
-        return error[key] as string;
-      }
-    }
-  }
-
-  return '';
-}
-
-async function readResponse(response: Response): Promise<unknown> {
-  const text = await response.text();
-
-  if (!text.trim()) {
-    return null;
-  }
-
-  try {
-    return JSON.parse(text);
-  } catch {
-    return text;
-  }
-}
-
-function extractSeasons(data: unknown): SaisonApi[] {
-  if (Array.isArray(data)) {
-    return data as SaisonApi[];
-  }
-
-  if (data && typeof data === 'object') {
-    const object = data as Record<string, unknown>;
-
-    // Certains contrôleurs renvoient directement une liste,
-    // d'autres l'enveloppent dans un objet.
-    for (const key of ['data', 'content', 'items', 'list', 'result']) {
-      if (Array.isArray(object[key])) {
-        return object[key] as SaisonApi[];
-      }
-    }
-
-    // Une réponse contenant une seule saison.
-    if ('beginDate' in object || 'year' in object) {
-      return [object as SaisonApi];
-    }
-  }
-
-  return [];
-}
-
-function normalizeDate(value: unknown): string {
-  if (typeof value !== 'string') {
-    return '';
-  }
-
-  // Pour un champ HTML input type="date".
-  return value.length >= 10 ? value.substring(0, 10) : value;
-}
-
-function sameId(a: unknown, b: string): boolean {
-  if (a === null || a === undefined) {
-    return false;
-  }
-
-  if (typeof a === 'object') {
-    const obj = a as Record<string, unknown>;
-
-    // Prise en charge de quelques formes courantes d'identifiant objet.
-    const nestedId = obj.id ?? obj.value ?? obj.idSaison;
-
-    return nestedId !== undefined && String(nestedId) === b;
-  }
-
-  return String(a) === b;
-}
-
-function toFormData(saison: SaisonApi): SaisonFormData {
-  return {
-    beginDate: normalizeDate(saison.beginDate),
-    endDate: normalizeDate(saison.endDate),
-    statusId: String(saison.statusId ?? '1'),
-    year: String(saison.year ?? ''),
-    priceKilo: String(saison.priceKilo ?? ''),
-    priceAchat: String(saison.priceAchat ?? ''),
-    priceVente: String(saison.priceVente ?? ''),
-    nbreCaisses: String(saison.nbreCaisses ?? ''),
-  };
-}
 
 export function ModifierSaisonPage() {
   const navigate = useNavigate();
-  const { id } = useParams<{ id: string }>();
 
   const [formData, setFormData] =
     useState<SaisonFormData>(initialFormData);
 
-  const [originalSaison, setOriginalSaison] =
-    useState<SaisonApi | null>(null);
+  const [showSuccessModal, setShowSuccessModal] =
+    useState(false);
 
-  const [isLoading, setIsLoading] = useState(true);
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
-  const [showSuccessModal, setShowSuccessModal] = useState(false);
-
-  /**
-   * Charger la liste et retrouver la saison sélectionnée.
-   *
-   * L'endpoint de liste est à adapter si le contrôleur
-   * expose un chemin différent dans Swagger.
-   */
-  const loadSaison = useCallback(async () => {
-    if (!id) {
-      setErrorMessage('Identifiant de saison absent dans l’URL.');
-      setIsLoading(false);
-      return;
-    }
-
-    setIsLoading(true);
-    setErrorMessage('');
-
-    try {
-      const response = await fetch(
-        `${LIST_API_URL}?searche=`,
-        {
-          method: 'GET',
-          headers: {
-            Accept: 'application/json',
-          },
-        },
-      );
-
-      const responseData = await readResponse(response);
-
-      if (!response.ok) {
-        throw new Error(
-          getErrorMessage(responseData) ||
-            `Erreur HTTP ${response.status}: ${response.statusText}`,
-        );
-      }
-
-      const seasons = extractSeasons(responseData);
-
-      const selected = seasons.find((item) => sameId(item.id, id));
-
-      if (!selected) {
-        throw new Error(
-          `La saison portant l’identifiant ${id} est introuvable dans la liste retournée par le backend.`,
-        );
-      }
-
-      setOriginalSaison(selected);
-      setFormData(toFormData(selected));
-    } catch (error) {
-      console.error('Erreur de chargement de la saison :', error);
-
-      setErrorMessage(
-        error instanceof TypeError
-          ? 'Impossible de joindre le serveur. Vérifiez le proxy Vite et la disponibilité de l’API.'
-          : error instanceof Error
-            ? error.message
-            : 'Erreur lors du chargement de la saison.',
-      );
-    } finally {
-      setIsLoading(false);
-    }
-  }, [id]);
-
-  useEffect(() => {
-    void loadSaison();
-  }, [loadSaison]);
 
   const handleChange = (
     event: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
@@ -249,42 +63,32 @@ export function ModifierSaisonPage() {
       [name]: value,
     }));
 
-    if (errorMessage) {
-      setErrorMessage('');
-    }
+    setErrorMessage('');
   };
 
   const handleCancel = () => {
     navigate('/store-admin/saison');
   };
 
-  const handleSubmit = async (
+  const handleSubmit = (
     event: React.FormEvent<HTMLFormElement>,
   ) => {
     event.preventDefault();
-
-    if (isSubmitting) return;
-
     setErrorMessage('');
-
-    if (!id || !originalSaison) {
-      setErrorMessage(
-        'La saison n’a pas été chargée correctement. Veuillez réessayer.',
-      );
-      return;
-    }
 
     if (
       !formData.year.trim() ||
       !formData.beginDate ||
       !formData.endDate ||
-      !formData.statusId.trim() ||
+      !formData.statusId ||
       !formData.priceKilo.trim() ||
       !formData.priceAchat.trim() ||
       !formData.priceVente.trim() ||
       !formData.nbreCaisses.trim()
     ) {
-      setErrorMessage('Veuillez remplir tous les champs obligatoires.');
+      setErrorMessage(
+        'Veuillez remplir tous les champs obligatoires.',
+      );
       return;
     }
 
@@ -304,412 +108,451 @@ export function ModifierSaisonPage() {
 
     if (
       !Number.isInteger(year) ||
+      year < 1900 ||
+      year > 2100 ||
       !Number.isInteger(statusId) ||
       !Number.isFinite(priceKilo) ||
       !Number.isFinite(priceAchat) ||
       !Number.isFinite(priceVente) ||
-      !Number.isInteger(nbreCaisses)
-    ) {
-      setErrorMessage(
-        'Vérifiez l’année, le statut, les prix et le nombre de caisses.',
-      );
-      return;
-    }
-
-    if (
-      year < 1900 ||
-      year > 2100 ||
-      statusId < 0 ||
+      !Number.isInteger(nbreCaisses) ||
       priceKilo < 0 ||
       priceAchat < 0 ||
       priceVente < 0 ||
       nbreCaisses < 0
     ) {
       setErrorMessage(
-        'Les valeurs saisies doivent respecter les limites autorisées.',
+        'Veuillez vérifier les valeurs saisies.',
       );
       return;
     }
 
-    /*
-     * On conserve les propriétés originales renvoyées par l'API,
-     * notamment l'identifiant et les éventuels champs de création.
-     * Les champs modifiables sont ensuite remplacés par les valeurs
-     * du formulaire.
-     */
-    const payload: SaisonApi = {
-      ...originalSaison,
-      beginDate: formData.beginDate,
-      endDate: formData.endDate,
-      statusId,
-      year,
-      priceKilo,
-      priceAchat,
-      priceVente,
-      nbreCaisses,
-    };
-
-    console.log('URL API :', `${API_URL}/update`);
-    console.log('JSON envoyé :', JSON.stringify(payload, null, 2));
-
-    setIsSubmitting(true);
-
-    try {
-      const response = await fetch(`${API_URL}/update`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Accept: 'application/json',
-        },
-        body: JSON.stringify(payload),
-      });
-
-      const responseData = await readResponse(response);
-
-      console.log('Statut HTTP :', response.status);
-      console.log('Réponse du serveur :', responseData);
-
-      if (!response.ok) {
-        throw new Error(
-          getErrorMessage(responseData) ||
-            `Erreur HTTP ${response.status}: ${response.statusText}`,
-        );
-      }
-
-      setShowSuccessModal(true);
-    } catch (error) {
-      console.error('Erreur lors de la modification :', error);
-
-      setErrorMessage(
-        error instanceof TypeError
-          ? 'Impossible de joindre l’API. Vérifiez le proxy, le serveur et la configuration CORS.'
-          : error instanceof Error
-            ? error.message
-            : 'Une erreur inattendue est survenue.',
-      );
-    } finally {
-      setIsSubmitting(false);
-    }
+    // Démonstration frontend uniquement : aucune API n'est appelée.
+    setShowSuccessModal(true);
   };
+
+  const inputClass =
+    'h-12 w-full rounded-xl border border-slate-200 bg-white text-sm text-slate-800 outline-none transition placeholder:text-slate-400 hover:border-slate-300 focus:border-[#556B2F] focus:ring-4 focus:ring-[#556B2F]/10';
+
+  const labelClass =
+    'mb-2 block text-sm font-semibold text-slate-700';
+
+  const iconClass =
+    'pointer-events-none absolute left-3.5 top-1/2 size-[17px] -translate-y-1/2 text-[#71804E]';
+
+  const unitClass =
+    'pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 text-xs font-semibold text-slate-400';
 
   return (
     <>
-      <Container>
-        <div className="mb-6 py-5">
-          <h1 className="text-2xl font-bold text-foreground">
-            Modifier une saison
-          </h1>
+      <div className="min-h-screen  pb-10">
+        <Container>
+          {/* En-tête */}
+         <div className="py-7">
+  <div className="flex flex-wrap items-center justify-between gap-5">
+    <div>
+      
 
-          <div className="mt-2 flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
-            <span>Accueil</span>
-            <span>/</span>
-            <span>Paramétrage</span>
-            <span>/</span>
-            <span>Saison</span>
-            <span>/</span>
-            <span className="font-medium text-foreground">Modifier</span>
-          </div>
-        </div>
-      </Container>
+      <h1 className="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
+        Modifier une saison
+      </h1>
 
-      <Container>
-        {errorMessage && (
-          <div
-            role="alert"
-            className="mb-4 rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
-          >
-            {errorMessage}
-            {!isLoading && !originalSaison && (
-              <button
-                type="button"
-                onClick={() => void loadSaison()}
-                className="ml-2 font-semibold underline"
-              >
-                Réessayer
-              </button>
-            )}
-          </div>
-        )}
+      <p className="mt-2 max-w-xl text-sm leading-6 text-slate-500">
+        Gérez les informations, les tarifs et les dates de votre campagne oléicole.
+      </p>
+    </div>
 
-        {isLoading ? (
-          <div className="rounded-xl border border-border bg-white p-8 text-center text-sm text-muted-foreground">
-            Chargement des informations de la saison...
-          </div>
-        ) : originalSaison ? (
-          <div className="mx-auto w-full max-w-4xl overflow-hidden rounded-xl border border-border bg-white shadow-sm">
-            <div className="border-b border-border px-6 py-5">
-              <div className="flex items-center gap-3">
-                <div className="flex size-10 items-center justify-center rounded-lg bg-[#eef4e6]">
-                  <CalendarDays className="size-5 text-[#556B2F]" />
-                </div>
+    
+  </div>
+</div>
+ 
 
-                <div>
-                  <h2 className="text-base font-semibold text-[#172033]">
-                    Informations de la saison
-                  </h2>
-                  <p className="mt-0.5 text-sm text-[#64748b]">
-                    Modifiez les informations puis enregistrez.
-                  </p>
+          {/* Formulaire */}
+          <form onSubmit={handleSubmit}>
+            <div className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-[0_8px_30px_-15px_rgba(35,48,20,0.18)]">
+              {/* Bandeau */}
+              <div className="relative overflow-hidden border-b border-slate-100 px-5 py-6 sm:px-8">
+                <div className="absolute inset-y-0 left-0 w-1 bg-[#556B2F]" />
+
+                <div className="flex items-center gap-4">
+                  <div className="flex size-12 shrink-0 items-center justify-center rounded-2xl bg-[#eef3e6]">
+                    <Sprout className="size-6 text-[#556B2F]" />
+                  </div>
+
+                  <div>
+                    <h2 className="text-lg font-bold text-slate-900">
+                      Informations de la saison
+                    </h2>
+                    <p className="mt-1 text-sm text-slate-500">
+                      Modifiez les champs nécessaires puis
+                      enregistrez vos changements.
+                    </p>
+                  </div>
                 </div>
               </div>
+
+              <div className="space-y-8 p-5 sm:p-8">
+                {/* Section 1 : informations générales */}
+                <section>
+                  <div className="mb-5 flex items-center gap-3">
+                    <div className="flex size-8 items-center justify-center rounded-lg bg-[#f0f3e9] text-sm font-bold text-[#556B2F]">
+                      01
+                    </div>
+
+                    <div>
+                      <h3 className="font-bold text-slate-800">
+                        Informations générales
+                      </h3>
+                      <p className="mt-0.5 text-xs text-slate-500">
+                        Année et état de la campagne
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
+                    {/* Année */}
+                    <div>
+                      <label htmlFor="year" className={labelClass}>
+                        Année de la saison
+                        <span className="ml-1 text-red-500">*</span>
+                      </label>
+
+                      <div className="relative">
+                        <Hash className={iconClass} />
+                        <input
+                          id="year"
+                          name="year"
+                          type="number"
+                          min="1900"
+                          max="2100"
+                          step="1"
+                          value={formData.year}
+                          onChange={handleChange}
+                          placeholder="Ex. 2026"
+                          required
+                          className={`${inputClass} pl-11 pr-4`}
+                        />
+                      </div>
+                    </div>
+
+                    {/* Statut */}
+                    <div>
+                      <label htmlFor="statusId" className={labelClass}>
+                        Statut
+                        <span className="ml-1 text-red-500">*</span>
+                      </label>
+
+                      <div className="relative">
+                        <Clock3 className={iconClass} />
+                        <select
+                          id="statusId"
+                          name="statusId"
+                          value={formData.statusId}
+                          onChange={handleChange}
+                          required
+                          className={`${inputClass} appearance-none pl-11 pr-10`}
+                        >
+                          <option value="1">En cours</option>
+                          <option value="2">Clôturée</option>
+                        </select>
+
+                        <ChevronRight className="pointer-events-none absolute right-4 top-1/2 size-4 -translate-y-1/2 rotate-90 text-slate-400" />
+                      </div>
+                    </div>
+                  </div>
+                </section>
+
+                <div className="border-t border-dashed border-slate-200" />
+
+                {/* Section 2 : période */}
+                <section>
+                  <div className="mb-5 flex items-center gap-3">
+                    <div className="flex size-8 items-center justify-center rounded-lg bg-[#f0f3e9] text-sm font-bold text-[#556B2F]">
+                      02
+                    </div>
+
+                    <div>
+                      <h3 className="font-bold text-slate-800">
+                        Période de la saison
+                      </h3>
+                      <p className="mt-0.5 text-xs text-slate-500">
+                        Définissez les dates de début et de fin
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
+                    <div>
+                      <label
+                        htmlFor="beginDate"
+                        className={labelClass}
+                      >
+                        Date de début
+                        <span className="ml-1 text-red-500">*</span>
+                      </label>
+
+                      <div className="relative">
+                        <CalendarDays className={iconClass} />
+                        <input
+                          id="beginDate"
+                          name="beginDate"
+                          type="date"
+                          value={formData.beginDate}
+                          onChange={handleChange}
+                          required
+                          className={`${inputClass} pl-11 pr-3`}
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label
+                        htmlFor="endDate"
+                        className={labelClass}
+                      >
+                        Date de fin
+                        <span className="ml-1 text-red-500">*</span>
+                      </label>
+
+                      <div className="relative">
+                        <CalendarDays className={iconClass} />
+                        <input
+                          id="endDate"
+                          name="endDate"
+                          type="date"
+                          min={formData.beginDate || undefined}
+                          value={formData.endDate}
+                          onChange={handleChange}
+                          required
+                          className={`${inputClass} pl-11 pr-3`}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </section>
+
+                <div className="border-t border-dashed border-slate-200" />
+
+                {/* Section 3 : tarifs */}
+                <section>
+                  <div className="mb-5 flex items-center gap-3">
+                    <div className="flex size-8 items-center justify-center rounded-lg bg-[#f0f3e9] text-sm font-bold text-[#556B2F]">
+                      03
+                    </div>
+
+                    <div>
+                      <h3 className="font-bold text-slate-800">
+                        Tarification
+                      </h3>
+                      <p className="mt-0.5 text-xs text-slate-500">
+                        Renseignez les prix en dinars tunisiens
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
+                    {/* Prix production */}
+                    <div>
+                      <label
+                        htmlFor="priceKilo"
+                        className={labelClass}
+                      >
+                        Prix de production d’un kilo d’olives
+                        <span className="ml-1 text-red-500">*</span>
+                      </label>
+
+                      <div className="relative">
+                        <CircleDollarSign className={iconClass} />
+                        <input
+                          id="priceKilo"
+                          name="priceKilo"
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          value={formData.priceKilo}
+                          onChange={handleChange}
+                          placeholder="Ex. 0.80"
+                          required
+                          className={`${inputClass} pl-11 pr-16`}
+                        />
+                        <span className={unitClass}>DT/kg</span>
+                      </div>
+                    </div>
+
+                    {/* Prix achat */}
+                    <div>
+                      <label
+                        htmlFor="priceAchat"
+                        className={labelClass}
+                      >
+                        Prix d’achat d’un litre d’huile
+                        <span className="ml-1 text-red-500">*</span>
+                      </label>
+
+                      <div className="relative">
+                        <ShoppingCart className={iconClass} />
+                        <input
+                          id="priceAchat"
+                          name="priceAchat"
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          value={formData.priceAchat}
+                          onChange={handleChange}
+                          placeholder="Ex. 18.00"
+                          required
+                          className={`${inputClass} pl-11 pr-14`}
+                        />
+                        <span className={unitClass}>DT/L</span>
+                      </div>
+                    </div>
+
+                    {/* Prix vente */}
+                    <div>
+                      <label
+                        htmlFor="priceVente"
+                        className={labelClass}
+                      >
+                        Prix de vente d’un litre d’huile
+                        <span className="ml-1 text-red-500">*</span>
+                      </label>
+
+                      <div className="relative">
+                        <CircleDollarSign className={iconClass} />
+                        <input
+                          id="priceVente"
+                          name="priceVente"
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          value={formData.priceVente}
+                          onChange={handleChange}
+                          placeholder="Ex. 20.00"
+                          required
+                          className={`${inputClass} pl-11 pr-14`}
+                        />
+                        <span className={unitClass}>DT/L</span>
+                      </div>
+                    </div>
+
+                    {/* Nombre de caisses */}
+                    <div>
+                      <label
+                        htmlFor="nbreCaisses"
+                        className={labelClass}
+                      >
+                        Nombre de caisses
+                        <span className="ml-1 text-red-500">*</span>
+                      </label>
+
+                      <div className="relative">
+                        <Package className={iconClass} />
+                        <input
+                          id="nbreCaisses"
+                          name="nbreCaisses"
+                          type="number"
+                          min="0"
+                          step="1"
+                          value={formData.nbreCaisses}
+                          onChange={handleChange}
+                          placeholder="Ex. 250"
+                          required
+                          className={`${inputClass} pl-11 pr-4`}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </section>
+
+                {/* Note */}
+                
+
+                {errorMessage && (
+                  <div
+                    role="alert"
+                    className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
+                  >
+                    {errorMessage}
+                  </div>
+                )}
+              </div>
+
+              {/* Actions */}
+<div className="flex justify-end border-t border-slate-100 bg-slate-50/70 px-5 py-5 sm:px-8">
+  <div className="flex flex-col-reverse gap-3 sm:flex-row">
+    <Button
+      type="button"
+      variant="outline"
+      onClick={handleCancel}
+      className="h-11 rounded-xl border-slate-200 bg-white px-5 font-semibold text-slate-600 transition hover:bg-slate-100"
+    >
+      <X className="mr-2 size-4" />
+      Annuler
+    </Button>
+
+    <Button
+      type="submit"
+      className="h-11 rounded-xl bg-[#556B2F] px-6 font-semibold text-white shadow-sm transition hover:bg-[#465A27] hover:shadow-md"
+    >
+      <Save className="mr-2 size-4" />
+      Enregistrer les modifications
+    </Button>
+  </div>
+</div>
             </div>
+          </form>
+        </Container>
+      </div>
 
-            <form onSubmit={handleSubmit}>
-              <div className="grid grid-cols-1 gap-x-6 gap-y-5 px-6 py-6 md:grid-cols-2">
-                <div>
-                  <label
-                    htmlFor="year"
-                    className="mb-2 block text-sm font-medium text-[#334155]"
-                  >
-                    Année de la saison *
-                  </label>
-                  <div className="relative">
-                    <Hash className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-[#64748b]" />
-                    <input
-                      id="year"
-                      name="year"
-                      type="number"
-                      min="1900"
-                      max="2100"
-                      step="1"
-                      value={formData.year}
-                      onChange={handleChange}
-                      required
-                      className="h-11 w-full rounded-md border border-input bg-background pl-10 pr-3 text-sm outline-none focus:border-[#556B2F] focus:ring-1 focus:ring-[#556B2F]"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label
-                    htmlFor="statusId"
-                    className="mb-2 block text-sm font-medium text-[#334155]"
-                  >
-                    Statut *
-                  </label>
-                  <select
-                    id="statusId"
-                    name="statusId"
-                    value={formData.statusId}
-                    onChange={handleChange}
-                    required
-                    className="h-11 w-full rounded-md border border-input bg-background px-3 text-sm outline-none focus:border-[#556B2F] focus:ring-1 focus:ring-[#556B2F]"
-                  >
-                    <option value="1">En cours</option>
-                    <option value="2">Clôturé</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label
-                    htmlFor="beginDate"
-                    className="mb-2 block text-sm font-medium text-[#334155]"
-                  >
-                    Date début saison *
-                  </label>
-                  <div className="relative">
-                    <CalendarDays className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-[#64748b]" />
-                    <input
-                      id="beginDate"
-                      name="beginDate"
-                      type="date"
-                      value={formData.beginDate}
-                      onChange={handleChange}
-                      required
-                      className="h-11 w-full rounded-md border border-input bg-background pl-10 pr-3 text-sm outline-none focus:border-[#556B2F] focus:ring-1 focus:ring-[#556B2F]"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label
-                    htmlFor="endDate"
-                    className="mb-2 block text-sm font-medium text-[#334155]"
-                  >
-                    Date fin saison *
-                  </label>
-                  <div className="relative">
-                    <CalendarDays className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-[#64748b]" />
-                    <input
-                      id="endDate"
-                      name="endDate"
-                      type="date"
-                      min={formData.beginDate || undefined}
-                      value={formData.endDate}
-                      onChange={handleChange}
-                      required
-                      className="h-11 w-full rounded-md border border-input bg-background pl-10 pr-3 text-sm outline-none focus:border-[#556B2F] focus:ring-1 focus:ring-[#556B2F]"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label
-                    htmlFor="priceKilo"
-                    className="mb-2 block text-sm font-medium text-[#334155]"
-                  >
-                    Prix de production par kg *
-                  </label>
-                  <div className="relative">
-                    <CircleDollarSign className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-[#64748b]" />
-                    <input
-                      id="priceKilo"
-                      name="priceKilo"
-                      type="number"
-                      step="0.01"
-                      min="0"
-                      value={formData.priceKilo}
-                      onChange={handleChange}
-                      required
-                      className="h-11 w-full rounded-md border border-input bg-background pl-10 pr-14 text-sm outline-none focus:border-[#556B2F] focus:ring-1 focus:ring-[#556B2F]"
-                    />
-                    <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xs text-[#64748b]">
-                      DT/kg
-                    </span>
-                  </div>
-                </div>
-
-                <div>
-                  <label
-                    htmlFor="priceAchat"
-                    className="mb-2 block text-sm font-medium text-[#334155]"
-                  >
-                    Prix d’achat par litre *
-                  </label>
-                  <div className="relative">
-                    <ShoppingCart className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-[#64748b]" />
-                    <input
-                      id="priceAchat"
-                      name="priceAchat"
-                      type="number"
-                      step="0.01"
-                      min="0"
-                      value={formData.priceAchat}
-                      onChange={handleChange}
-                      required
-                      className="h-11 w-full rounded-md border border-input bg-background pl-10 pr-12 text-sm outline-none focus:border-[#556B2F] focus:ring-1 focus:ring-[#556B2F]"
-                    />
-                    <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xs text-[#64748b]">
-                      DT/L
-                    </span>
-                  </div>
-                </div>
-
-                <div>
-                  <label
-                    htmlFor="priceVente"
-                    className="mb-2 block text-sm font-medium text-[#334155]"
-                  >
-                    Prix de vente par litre *
-                  </label>
-                  <div className="relative">
-                    <CircleDollarSign className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-[#64748b]" />
-                    <input
-                      id="priceVente"
-                      name="priceVente"
-                      type="number"
-                      step="0.01"
-                      min="0"
-                      value={formData.priceVente}
-                      onChange={handleChange}
-                      required
-                      className="h-11 w-full rounded-md border border-input bg-background pl-10 pr-12 text-sm outline-none focus:border-[#556B2F] focus:ring-1 focus:ring-[#556B2F]"
-                    />
-                    <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xs text-[#64748b]">
-                      DT/L
-                    </span>
-                  </div>
-                </div>
-
-                <div>
-                  <label
-                    htmlFor="nbreCaisses"
-                    className="mb-2 block text-sm font-medium text-[#334155]"
-                  >
-                    Nombre de caisses *
-                  </label>
-                  <div className="relative">
-                    <Package className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-[#64748b]" />
-                    <input
-                      id="nbreCaisses"
-                      name="nbreCaisses"
-                      type="number"
-                      min="0"
-                      step="1"
-                      value={formData.nbreCaisses}
-                      onChange={handleChange}
-                      required
-                      className="h-11 w-full rounded-md border border-input bg-background pl-10 pr-3 text-sm outline-none focus:border-[#556B2F] focus:ring-1 focus:ring-[#556B2F]"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex flex-col-reverse gap-2 border-t border-border px-6 py-4 sm:flex-row sm:justify-end sm:gap-3">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={handleCancel}
-                  disabled={isSubmitting}
-                  className="h-11 w-full sm:w-auto"
-                >
-                  <X className="size-4" />
-                  Annuler
-                </Button>
-
-                <Button
-                  type="submit"
-                  disabled={isSubmitting}
-                  className="h-11 w-full bg-[#556B2F] font-semibold text-white hover:bg-[#465A27] disabled:opacity-60 sm:w-auto"
-                >
-                  <Save className="size-4" />
-                  {isSubmitting
-                    ? 'Enregistrement...'
-                    : 'Enregistrer les modifications'}
-                </Button>
-              </div>
-            </form>
-          </div>
-        ) : (
-          <div className="rounded-xl border border-border bg-white p-6 text-sm text-muted-foreground">
-            Aucune saison à modifier. Vérifiez l’identifiant et l’API de liste.
-          </div>
-        )}
-      </Container>
-
+      {/* Confirmation frontend */}
       {showSuccessModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/45 px-4 backdrop-blur-[3px]">
           <div
             role="dialog"
             aria-modal="true"
             aria-labelledby="success-title"
-            className="w-full max-w-[380px] rounded-xl bg-white p-6 shadow-2xl"
+            className="w-full max-w-md overflow-hidden rounded-2xl bg-white shadow-2xl"
           >
-            <div className="flex flex-col items-center text-center">
-              <div className="mb-4 flex size-14 items-center justify-center rounded-full bg-[#eef4e6]">
-                <div className="flex size-9 items-center justify-center rounded-full bg-[#556B2F]">
-                  <Check className="size-5 text-white" />
+            <div className="h-1.5 bg-[#556B2F]" />
+
+            <div className="px-7 pb-7 pt-8 text-center sm:px-9">
+              <div className="mx-auto flex size-16 items-center justify-center rounded-2xl bg-[#eef3e6]">
+                <div className="flex size-11 items-center justify-center rounded-full bg-[#556B2F]">
+                  <Check className="size-6 text-white" />
                 </div>
               </div>
 
-              <h3
+              <h2
                 id="success-title"
-                className="text-lg font-semibold text-[#172033]"
+                className="mt-5 text-xl font-bold text-slate-900"
               >
-                Saison modifiée
-              </h3>
+                Modification confirmée
+              </h2>
 
-              <p className="mt-2 text-sm leading-6 text-[#64748b]">
-                Le serveur a accepté la modification de la saison.
+              <p className="mt-2 text-sm leading-6 text-slate-500">
+                Les modifications sont affichées comme confirmées
+                dans cette démonstration frontend. Aucune donnée
+                n’a été envoyée au serveur.
               </p>
 
-              <Button
-                type="button"
-                onClick={() => navigate('/store-admin/saison')}
-                className="mt-5 h-10 min-w-[100px] bg-[#556B2F] px-5 font-semibold text-white hover:bg-[#465A27]"
-              >
-                OK
-              </Button>
+              <div className="mt-7 flex flex-col-reverse gap-3 sm:flex-row sm:justify-center">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setShowSuccessModal(false)}
+                  className="h-11 rounded-xl px-5"
+                >
+                  Continuer à modifier
+                </Button>
+
+                <Button
+                  type="button"
+                  onClick={() => navigate('/store-admin/saison')}
+                  className="h-11 rounded-xl bg-[#556B2F] px-6 font-semibold text-white hover:bg-[#465A27]"
+                >
+                  <Check className="mr-2 size-4" />
+                  Terminer
+                </Button>
+              </div>
             </div>
           </div>
         </div>

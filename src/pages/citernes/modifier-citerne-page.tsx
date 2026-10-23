@@ -2,13 +2,19 @@
 import { useEffect, useState } from "react";
 import type { ChangeEvent, FormEvent } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-
 import {
+  ArrowLeft,
   CalendarDays,
   Check,
+  ChevronRight,
   Database,
+  Droplets,
+  Hash,
+  LoaderCircle,
   Save,
   X,
+  AlertCircle,
+  CheckCircle2,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -19,7 +25,9 @@ interface Citerne {
   citerneId?: number | string;
   reference?: string;
   libelle?: string;
+  name?: string;
   capacity?: number | string;
+  capacite?: number | string;
   dateFabrication?: string | number[] | null;
   [key: string]: unknown;
 }
@@ -33,6 +41,7 @@ interface CiterneFormData {
 
 const API_LIST = "/olive_app/citerne/getListBean?searche=";
 const API_UPDATE = "/olive_app/citerne/update";
+const LIST_PAGE = "/store-admin/tanks";
 
 function extractCiternes(data: unknown): Citerne[] {
   if (Array.isArray(data)) {
@@ -59,7 +68,6 @@ function extractCiternes(data: unknown): Citerne[] {
       return value as Citerne[];
     }
 
-    // Prend également en charge { data: { ... } }.
     if (value && typeof value === "object") {
       const nested = extractCiternes(value);
 
@@ -76,26 +84,16 @@ function getCiterneId(citerne: Citerne): string {
   return String(citerne.citerneId ?? citerne.id ?? "");
 }
 
-function toText(value: unknown): string {
-  if (value === undefined || value === null) {
-    return "";
-  }
-
-  return String(value);
-}
-
 function toInputDate(
-  value: string | number[] | null | undefined
+  value: string | number[] | null | undefined,
 ): string {
-  if (!value) {
-    return "";
-  }
+  if (!value) return "";
 
   if (Array.isArray(value) && value.length >= 3) {
     const [year, month, day] = value;
 
     return `${String(year).padStart(4, "0")}-${String(
-      month
+      month,
     ).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
   }
 
@@ -105,9 +103,7 @@ function toInputDate(
     return raw;
   }
 
-  const dateMatch = raw.match(
-    /^(\d{2})\/(\d{2})\/(\d{4})$/
-  );
+  const dateMatch = raw.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
 
   if (dateMatch) {
     return `${dateMatch[3]}-${dateMatch[2]}-${dateMatch[1]}`;
@@ -136,6 +132,7 @@ export function ModifierCiternePage() {
   const [errorMessage, setErrorMessage] = useState("");
   const [showSuccessModal, setShowSuccessModal] = useState(false);
 
+  // Charger les données de la citerne sélectionnée.
   useEffect(() => {
     let cancelled = false;
 
@@ -158,44 +155,35 @@ export function ModifierCiternePage() {
         });
 
         if (!response.ok) {
-          throw new Error(`Erreur HTTP ${response.status}`);
+          throw new Error(`Erreur HTTP ${response.status}.`);
         }
 
         const data: unknown = await response.json();
-
-        console.log("Réponse GET citernes :", data);
-
         const citernes = extractCiternes(data);
 
         const citerne = citernes.find(
-          (item) => getCiterneId(item) === id
+          (item) => getCiterneId(item) === id,
         );
 
         if (!citerne) {
-          throw new Error(
-            `Citerne ${id} introuvable dans la liste retournée par le backend.`
-          );
+          throw new Error(`La citerne ${id} est introuvable.`);
         }
 
         if (cancelled) return;
 
-        console.log("Citerne sélectionnée :", citerne);
-
         setFormData({
-          reference: toText(citerne.reference),
-          libelle: toText(citerne.libelle),
-          capacity: toText(citerne.capacity),
+          reference: String(citerne.reference ?? ""),
+          libelle: String(citerne.libelle ?? citerne.name ?? ""),
+          capacity: String(citerne.capacity ?? citerne.capacite ?? ""),
           dateFabrication: toInputDate(citerne.dateFabrication),
         });
       } catch (error) {
         if (cancelled) return;
 
-        console.error("Erreur de chargement :", error);
-
         setErrorMessage(
           error instanceof Error
             ? error.message
-            : "Impossible de charger la citerne."
+            : "Impossible de charger la citerne.",
         );
       } finally {
         if (!cancelled) {
@@ -218,13 +206,18 @@ export function ModifierCiternePage() {
       ...previous,
       [name]: value,
     }));
+
+    setErrorMessage("");
   };
 
   const handleCancel = () => {
-    navigate("/store-admin/tanks");
+    navigate(LIST_PAGE);
   };
 
-  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
+  // Envoyer les modifications au backend.
+  const handleSubmit = async (
+    event: FormEvent<HTMLFormElement>,
+  ) => {
     event.preventDefault();
     setErrorMessage("");
 
@@ -233,28 +226,33 @@ export function ModifierCiternePage() {
       return;
     }
 
+    const reference = formData.reference.trim();
+    const libelle = formData.libelle.trim();
+    const capacity = Number(formData.capacity);
+
+    if (!reference || !libelle || !formData.dateFabrication) {
+      setErrorMessage("Veuillez remplir tous les champs obligatoires.");
+      return;
+    }
+
     if (
-      !formData.reference.trim() ||
-      !formData.libelle.trim() ||
       formData.capacity.trim() === "" ||
-      !Number.isFinite(Number(formData.capacity)) ||
-      Number(formData.capacity) <= 0
+      !Number.isFinite(capacity) ||
+      capacity <= 0
     ) {
       setErrorMessage(
-        "Veuillez saisir une référence, un nom et une capacité supérieure à zéro."
+        "La capacité doit être un nombre supérieur à zéro.",
       );
       return;
     }
 
-    // Payload minimal : vérifier les propriétés attendues dans Swagger.
     const payload = {
       citerneId: Number(id),
-      reference: formData.reference.trim(),
-      libelle: formData.libelle.trim(),
-      capacity: Number(formData.capacity),
+      reference,
+      libelle,
+      capacity,
+      dateFabrication: formData.dateFabrication,
     };
-
-    console.log("Payload envoyé à /citerne/update :", payload);
 
     setSaving(true);
 
@@ -270,238 +268,390 @@ export function ModifierCiternePage() {
 
       const responseText = await response.text();
 
-      console.log("Statut update :", response.status);
-      console.log("Réponse update :", responseText);
+      let responseData: unknown = null;
+
+      if (responseText) {
+        try {
+          responseData = JSON.parse(responseText);
+        } catch {
+          responseData = responseText;
+        }
+      }
 
       if (!response.ok) {
-        throw new Error(
-          `Erreur HTTP ${response.status}: ${
-            responseText || "Le serveur a refusé les données."
-          }`
-        );
+        let message = `Erreur HTTP ${response.status}.`;
+
+        if (typeof responseData === "string" && responseData.trim()) {
+          message += ` ${responseData}`;
+        } else if (
+          typeof responseData === "object" &&
+          responseData !== null
+        ) {
+          const data = responseData as Record<string, unknown>;
+          const backendMessage =
+            data.message ?? data.detail ?? data.error ?? data.title;
+
+          if (backendMessage) {
+            message += ` ${String(backendMessage)}`;
+          }
+        }
+
+        throw new Error(message);
       }
 
       setShowSuccessModal(true);
     } catch (error) {
-      console.error("Erreur de modification :", error);
+      console.error(
+        "Erreur lors de la modification de la citerne :",
+        error,
+      );
 
       setErrorMessage(
         error instanceof Error
           ? error.message
-          : "Une erreur est survenue lors de la modification."
+          : "Une erreur est survenue lors de la modification.",
       );
     } finally {
       setSaving(false);
     }
   };
 
+  const handleSuccess = () => {
+    setShowSuccessModal(false);
+    navigate(LIST_PAGE);
+  };
+
   return (
     <>
       <Container>
-        <div className="mb-6 flex flex-col gap-1">
-          <h1 className="text-xl font-semibold text-[#172033]">
-            Modifier une citerne
-          </h1>
+        <div className="w-full py-5 lg:py-6">
+          {/* Fil d'Ariane */}
+          
 
-          <div className="flex items-center gap-2 text-sm text-[#64748b]">
-            <span>Accueil</span>
-            <span>/</span>
-            <span>Paramétrage</span>
-            <span>/</span>
-            <span>Citernes</span>
-            <span>/</span>
-            <span className="font-medium text-[#556B2F]">
-              Modifier
-            </span>
-          </div>
-        </div>
+          {/* En-tête minimaliste */}
+          <div className="mb-7 flex flex-col justify-between gap-5 border-b border-slate-200 pb-6 sm:flex-row sm:items-center">
+            <div>
+              <h1 className="text-2xl font-bold tracking-tight text-[#172033] sm:text-3xl">
+                Modifier une citerne
+              </h1>
 
-        <div className="mx-auto w-full max-w-4xl overflow-hidden rounded-xl border border-border bg-white shadow-sm">
-          <div className="border-b border-border px-6 py-5">
-            <div className="flex items-center gap-3">
-              <div className="flex size-10 items-center justify-center rounded-lg bg-[#eef4e6]">
-                <Database className="size-5 text-[#556B2F]" />
-              </div>
-
-              <div>
-                <h2 className="text-base font-semibold text-[#172033]">
-                  Informations de la citerne
-                </h2>
-                <p className="mt-0.5 text-sm text-[#64748b]">
-                  Modifiez les informations de la citerne sélectionnée.
-                </p>
-              </div>
+              <p className="mt-1.5 text-sm leading-6 text-slate-500 sm:text-base">
+                Modifiez les informations de votre citerne de stockage
+                d'huile d'olive.
+              </p>
             </div>
+
+            <Button
+  type="button"
+  variant="outline"
+  onClick={handleCancel}
+  className="h-11 shrink-0 self-start rounded-xl border border-[#DCE8CF] bg-[#F4F8EF] px-5 text-sm font-semibold text-[#556B2F] shadow-sm transition-all hover:border-[#C7D9B3] hover:bg-[#EAF2E0] hover:text-[#435B2B] sm:self-center"
+>
+  <ArrowLeft className="mr-2 size-4 text-[#718747]" />
+  Retour aux citernes
+</Button>
           </div>
 
+          {/* Chargement */}
           {loadingData ? (
-            <div className="px-6 py-10 text-center text-sm text-[#64748b]">
-              Chargement des informations de la citerne...
+            <div className="flex min-h-64 flex-col items-center justify-center rounded-xl border border-slate-200 bg-white">
+              <LoaderCircle className="size-8 animate-spin text-[#556B2F]" />
+
+              <p className="mt-4 text-sm font-medium text-slate-600">
+                Chargement des informations de la citerne...
+              </p>
             </div>
           ) : (
-            <form onSubmit={handleSubmit}>
-              <div className="grid grid-cols-1 gap-x-6 gap-y-5 px-6 py-6 md:grid-cols-2">
-                <div>
-                  <label
-                    htmlFor="reference"
-                    className="mb-2 block text-sm font-medium text-[#334155]"
-                  >
-                    Référence
-                  </label>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              {/* Informations générales */}
+              <section className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-[0_2px_8px_rgba(15,23,42,0.025)]">
+                <div className="border-b border-slate-100 px-6 py-5 sm:px-8">
+                  <h2 className="text-lg font-bold tracking-tight text-[#172033]">
+                    Informations générales
+                  </h2>
 
-                  <div className="relative">
-                    <Database className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-[#64748b]" />
-                    <input
-                      id="reference"
-                      name="reference"
-                      type="text"
-                      value={formData.reference}
-                      onChange={handleChange}
-                      required
-                      className="h-11 w-full rounded-md border border-input bg-background pl-10 pr-3 text-sm outline-none focus:border-[#556B2F] focus:ring-1 focus:ring-[#556B2F]"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label
-                    htmlFor="libelle"
-                    className="mb-2 block text-sm font-medium text-[#334155]"
-                  >
-                    Nom de la citerne
-                  </label>
-
-                  <div className="relative">
-                    <Database className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-[#64748b]" />
-                    <input
-                      id="libelle"
-                      name="libelle"
-                      type="text"
-                      value={formData.libelle}
-                      onChange={handleChange}
-                      required
-                      placeholder="Ex : Citerne 1"
-                      className="h-11 w-full rounded-md border border-input bg-background pl-10 pr-3 text-sm outline-none focus:border-[#556B2F] focus:ring-1 focus:ring-[#556B2F]"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label
-                    htmlFor="capacity"
-                    className="mb-2 block text-sm font-medium text-[#334155]"
-                  >
-                    Capacité
-                  </label>
-
-                  <div className="relative">
-                    <input
-                      id="capacity"
-                      name="capacity"
-                      type="number"
-                      min="1"
-                      value={formData.capacity}
-                      onChange={handleChange}
-                      required
-                      placeholder="Ex : 5000"
-                      className="h-11 w-full rounded-md border border-input bg-background px-3 pr-12 text-sm outline-none focus:border-[#556B2F] focus:ring-1 focus:ring-[#556B2F]"
-                    />
-                    <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xs font-medium text-[#64748b]">
-                      L
-                    </span>
-                  </div>
-                </div>
-
-                <div>
-                  <label
-                    htmlFor="dateFabrication"
-                    className="mb-2 block text-sm font-medium text-[#334155]"
-                  >
-                    Date de fabrication
-                  </label>
-
-                  <div className="relative">
-                    <CalendarDays className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-[#64748b]" />
-                    <input
-                      id="dateFabrication"
-                      name="dateFabrication"
-                      type="date"
-                      value={formData.dateFabrication}
-                      onChange={handleChange}
-                      className="h-11 w-full rounded-md border border-input bg-background pl-10 pr-3 text-sm outline-none focus:border-[#556B2F] focus:ring-1 focus:ring-[#556B2F]"
-                    />
-                  </div>
-
-                  <p className="mt-1 text-xs text-[#64748b]">
-                    La date sera enregistrée uniquement si l’API
-                    de modification prend ce champ en charge.
+                  <p className="mt-1 text-sm text-slate-500">
+                    Modifiez les informations de base de la citerne.
                   </p>
                 </div>
-              </div>
 
+                <div className="px-6 py-6 sm:px-8 sm:py-7">
+                  <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
+                    <p className="text-sm font-semibold text-slate-700">
+                      Informations de la citerne
+                    </p>
+
+                    <p className="text-xs text-slate-400">
+                      <span className="text-red-500">*</span>{" "}
+                      Champs obligatoires
+                    </p>
+                  </div>
+
+                  <div className="grid grid-cols-1 gap-x-7 gap-y-6 md:grid-cols-2">
+                    {/* Référence */}
+                    <div className="space-y-2">
+                      <label
+                        htmlFor="reference"
+                        className="flex items-center gap-2 text-sm font-semibold text-[#172033]"
+                      >
+                        <Hash className="size-4 text-[#71864e]" />
+                        Référence
+                        <span className="text-red-500">*</span>
+                      </label>
+
+                      <input
+                        id="reference"
+                        name="reference"
+                        type="text"
+                        value={formData.reference}
+                        onChange={handleChange}
+                        placeholder="Ex. CIT-001"
+                        autoComplete="off"
+                        required
+                        className="h-12 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm text-slate-800 outline-none transition placeholder:text-slate-400 hover:border-slate-300 focus:border-[#71864e] focus:ring-4 focus:ring-[#556B2F]/10"
+                      />
+
+                      <p className="text-xs leading-5 text-slate-500">
+                        Identifiant unique de la citerne.
+                      </p>
+                    </div>
+
+                    {/* Nom */}
+                    <div className="space-y-2">
+                      <label
+                        htmlFor="libelle"
+                        className="flex items-center gap-2 text-sm font-semibold text-[#172033]"
+                      >
+                        <Database className="size-4 text-[#71864e]" />
+                        Nom de la citerne
+                        <span className="text-red-500">*</span>
+                      </label>
+
+                      <input
+                        id="libelle"
+                        name="libelle"
+                        type="text"
+                        value={formData.libelle}
+                        onChange={handleChange}
+                        placeholder="Ex. Citerne principale"
+                        autoComplete="off"
+                        required
+                        className="h-12 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm text-slate-800 outline-none transition placeholder:text-slate-400 hover:border-slate-300 focus:border-[#71864e] focus:ring-4 focus:ring-[#556B2F]/10"
+                      />
+
+                      <p className="text-xs leading-5 text-slate-500">
+                        Nom permettant de reconnaître la citerne.
+                      </p>
+                    </div>
+
+                    {/* Capacité */}
+                    <div className="space-y-2">
+                      <label
+                        htmlFor="capacity"
+                        className="flex items-center gap-2 text-sm font-semibold text-[#172033]"
+                      >
+                        <Droplets className="size-4 text-[#71864e]" />
+                        Capacité
+                        <span className="text-red-500">*</span>
+                      </label>
+
+                      <div className="relative">
+                        <input
+                          id="capacity"
+                          name="capacity"
+                          type="number"
+                          min="0.01"
+                          step="any"
+                          value={formData.capacity}
+                          onChange={handleChange}
+                          placeholder="Ex. 3000"
+                          required
+                          className="h-12 w-full rounded-xl border border-slate-200 bg-white px-4 pr-14 text-sm text-slate-800 outline-none transition placeholder:text-slate-400 hover:border-slate-300 focus:border-[#71864e] focus:ring-4 focus:ring-[#556B2F]/10"
+                        />
+
+                        <span className="absolute right-4 top-1/2 -translate-y-1/2 rounded-md bg-[#edf3e5] px-2.5 py-1 text-xs font-bold text-[#556B2F]">
+                          L
+                        </span>
+                      </div>
+
+                      <p className="text-xs leading-5 text-slate-500">
+                        Capacité maximale de stockage en litres.
+                      </p>
+                    </div>
+
+                    {/* Date de fabrication */}
+                    <div className="space-y-2">
+                      <label
+                        htmlFor="dateFabrication"
+                        className="flex items-center gap-2 text-sm font-semibold text-[#172033]"
+                      >
+                        <CalendarDays className="size-4 text-[#71864e]" />
+                        Date de fabrication
+                        <span className="text-red-500">*</span>
+                      </label>
+
+                      <input
+                        id="dateFabrication"
+                        name="dateFabrication"
+                        type="date"
+                        value={formData.dateFabrication}
+                        onChange={handleChange}
+                        required
+                        className="h-12 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm text-slate-700 outline-none transition hover:border-slate-300 focus:border-[#71864e] focus:ring-4 focus:ring-[#556B2F]/10"
+                      />
+
+                      <p className="text-xs leading-5 text-slate-500">
+                        Date de fabrication de l'équipement.
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Aperçu de la capacité */}
+                  {formData.capacity &&
+                    Number.isFinite(Number(formData.capacity)) &&
+                    Number(formData.capacity) > 0 && (
+                      <div className="mt-7 flex items-center gap-3 rounded-xl border border-[#e1e9d6] bg-[#f7f9f3] p-4">
+                        <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-white text-[#556B2F]">
+                          <Droplets className="size-5" />
+                        </div>
+
+                        <div className="min-w-0">
+                          <p className="text-xs font-medium text-slate-500">
+                            Capacité maximale
+                          </p>
+
+                          <p className="mt-0.5 text-lg font-bold text-[#405322]">
+                            {Number(formData.capacity).toLocaleString(
+                              "fr-FR",
+                            )}{" "}
+                            L
+                          </p>
+                        </div>
+
+                        <CheckCircle2 className="ml-auto size-5 shrink-0 text-[#71864e]" />
+                      </div>
+                    )}
+                </div>
+              </section>
+
+              {/* Erreur */}
               {errorMessage && (
                 <div
                   role="alert"
-                  className="mx-6 mb-4 rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
+                  className="flex items-start gap-3 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700"
                 >
-                  {errorMessage}
+                  <AlertCircle className="mt-0.5 size-5 shrink-0" />
+
+                  <p className="break-words">{errorMessage}</p>
+
+                  <button
+                    type="button"
+                    onClick={() => setErrorMessage("")}
+                    className="ml-auto shrink-0 rounded-md p-1 transition hover:bg-red-100"
+                    aria-label="Fermer le message d'erreur"
+                  >
+                    <X className="size-4" />
+                  </button>
                 </div>
               )}
 
-              <div className="flex flex-col-reverse gap-2 border-t border-border px-3 py-4 sm:flex-row sm:justify-end sm:gap-3 sm:px-6">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={handleCancel}
-                  disabled={saving}
-                  className="h-11 w-full rounded-md sm:w-auto"
-                >
-                  <X className="size-4" />
-                  Annuler
-                </Button>
+              {/* Actions */}
+              <div className="flex justify-end">
+  <div className="flex flex-col-reverse gap-3 sm:flex-row">
+    <Button
+      type="button"
+      variant="outline"
+      onClick={handleCancel}
+      disabled={saving}
+      className="h-11 rounded-xl border-slate-200 bg-white px-5 text-sm font-semibold text-slate-600 transition hover:border-orange-300 hover:bg-orange-50 hover:text-orange-700"
+    >
+      <X className="mr-2 size-4" />
+      Annuler
+    </Button>
 
-                <Button
-                  type="submit"
-                  disabled={saving || loadingData}
-                  className="h-11 w-full rounded-md bg-[#556B2F] px-5 font-semibold text-white hover:bg-[#465A27] sm:w-auto"
-                >
-                  <Save className="size-4" />
-                  {saving
-                    ? "Enregistrement..."
-                    : "Enregistrer les modifications"}
-                </Button>
+    <Button
+      type="submit"
+      disabled={saving}
+      className="h-11 rounded-xl bg-[#556B2F] px-6 text-sm font-semibold text-white shadow-sm transition hover:bg-[#465A27] hover:shadow-md disabled:cursor-not-allowed disabled:opacity-60"
+    >
+      {saving ? (
+        <LoaderCircle className="mr-2 size-4 animate-spin" />
+      ) : (
+        <Save className="mr-2 size-4" />
+      )}
+
+      {saving
+        ? "Enregistrement..."
+        : "Enregistrer les modifications"}
+    </Button>
+  </div>
               </div>
             </form>
           )}
         </div>
       </Container>
 
+      {/* Modale de succès */}
       {showSuccessModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
-          <div className="w-full max-w-[380px] rounded-xl bg-white p-6 shadow-2xl">
-            <div className="flex flex-col items-center text-center">
-              <div className="mb-4 flex size-14 items-center justify-center rounded-full bg-[#eef4e6]">
-                <div className="flex size-9 items-center justify-center rounded-full bg-[#556B2F]">
-                  <Check className="size-5 text-white" />
-                </div>
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 px-4 backdrop-blur-[3px]"
+          onClick={() => setShowSuccessModal(false)}
+        >
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="success-title"
+            className="w-full max-w-sm rounded-2xl border border-slate-100 bg-white p-7 text-center shadow-2xl"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="mx-auto flex size-16 items-center justify-center rounded-2xl bg-[#edf4e5]">
+              <div className="flex size-10 items-center justify-center rounded-full bg-[#556B2F] text-white">
+                <Check className="size-5" />
+              </div>
+            </div>
+
+            <h2
+              id="success-title"
+              className="mt-5 text-xl font-bold text-[#172033]"
+            >
+              Modifications enregistrées !
+            </h2>
+
+            <p className="mt-2 text-sm leading-6 text-slate-500">
+              Les informations de la citerne ont été mises à jour avec succès.
+            </p>
+
+            <div className="mt-6 rounded-xl border border-slate-100 bg-slate-50 p-4 text-left">
+              <div className="flex items-center justify-between gap-3 text-sm">
+                <span className="text-slate-500">Référence</span>
+                <span className="break-all text-right font-semibold text-slate-800">
+                  {formData.reference}
+                </span>
               </div>
 
-              <h3 className="text-lg font-semibold text-[#172033]">
-                Citerne modifiée
-              </h3>
+              <div className="mt-3 flex items-center justify-between gap-3 text-sm">
+                <span className="text-slate-500">Nom</span>
+                <span className="break-all text-right font-semibold text-slate-800">
+                  {formData.libelle}
+                </span>
+              </div>
 
-              <p className="mt-2 text-sm leading-6 text-[#64748b]">
-                Le serveur a accepté la requête de modification.
-              </p>
-
-              <Button
-                type="button"
-                onClick={() => navigate("/store-admin/tanks")}
-                className="mt-5 h-10 min-w-[100px] rounded-md bg-[#556B2F] px-5 font-semibold text-white hover:bg-[#465A27]"
-              >
-                OK
-              </Button>
+              <div className="mt-3 flex items-center justify-between gap-3 text-sm">
+                <span className="text-slate-500">Capacité</span>
+                <span className="font-semibold text-[#556B2F]">
+                  {Number(formData.capacity).toLocaleString("fr-FR")} L
+                </span>
+              </div>
             </div>
+
+            <button
+  type="button"
+  onClick={handleSuccess}
+  className="mt-6 flex h-11 w-full items-center justify-center gap-2 rounded-xl border border-[#F5C58B] bg-[#FFF4E5] px-4 text-sm font-semibold text-[#C46A12] shadow-sm transition-colors duration-200 hover:bg-[#FFE8CC] focus:outline-none focus:ring-2 focus:ring-[#F5C58B] focus:ring-offset-2"
+>
+  Retour aux citernes
+  <ChevronRight className="size-4" />
+</button>
           </div>
         </div>
       )}

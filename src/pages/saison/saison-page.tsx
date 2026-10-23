@@ -230,72 +230,65 @@ const handleEdit = (saison: Saison) => {
       ====================================================== */}
 
       <Container>
-        <div className="py-5 lg:py-6">
-          {/* ==================================================
-              BREADCRUMB
-          ================================================== */}
+  <div className="py-4 sm:py-5">
 
-          
+    {/* Fil d'Ariane */}
+    
 
-<div className="mb-4 flex items-center gap-2 font-sans text-sm tracking-wide text-[#64748b]">
+    {/* Titre et bouton */}
+    <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
 
-  <span className="font-medium transition-colors hover:text-[#556B2F]">
-    Paramétrage
-  </span>
+      {/* Titre */}
+      <div className="flex min-w-0 items-center gap-3.5">
 
-  <ChevronRight className="size-4 text-[#94a3b8]" />
-
-  <span className="font-semibold text-[#334155]">
-    Saisons
-  </span>
-
-</div>
-
-
-          {/* ==================================================
-              TITRE + BOUTON
-          ================================================== */}
-
-          <div className="flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
-            {/* =================================================
-                GAUCHE
-            ================================================= */}
-
-            <div className="flex items-center gap-4">
-              {/* ICÔNE */}
-              <div className="flex size-12 shrink-0 items-center justify-center rounded-xl bg-[#eef4e6]">
-                <Sprout className="size-6 text-[#556B2F]" />
-              </div>
-
-              {/* TITRE */}
-              <div>
-                <h1 className="text-2xl font-bold tracking-tight text-[#172033]">
-                  Saisons
-                </h1>
-
-                <p className="mt-0.5 text-sm text-muted-foreground">
-                  Gestion des campagnes et paramètres de
-                  production
-                </p>
-              </div>
-            </div>
-
-            {/* =================================================
-                BOUTON AJOUTER
-            ================================================= */}
-
-            <Button
-              type="button"
-              onClick={handleAdd}
-              className="h-11 rounded-lg bg-[#556B2F] px-5 font-semibold text-white shadow-sm transition-all hover:bg-[#465A27] hover:shadow-md"
-            >
-              <Plus className="size-4" />
-
-              Ajouter une saison
-            </Button>
-          </div>
+        {/* Icône */}
+        <div className="flex size-14 shrink-0 items-center justify-center rounded-2xl border border-[#e2ead7] bg-[#f1f6eb]">
+          <Sprout
+            className="size-7 text-[#526B2F]"
+            strokeWidth={2}
+          />
         </div>
-      </Container>
+
+        {/* Texte */}
+        <div className="min-w-0">
+          <h1 className="text-2xl font-bold tracking-tight text-[#172033] sm:text-[28px]">
+            Saisons
+          </h1>
+
+          <p className="mt-1 text-sm leading-5 text-slate-500">
+            Gérez les campagnes et les paramètres de production
+            d'huile d'olive.
+          </p>
+        </div>
+      </div>
+
+      {/* Bouton Ajouter */}
+      <Button
+        type="button"
+        onClick={handleAdd}
+        className="
+          inline-flex h-11 shrink-0 items-center justify-center gap-2.5
+          rounded-xl border border-[#526B2F]
+          bg-[#526B2F] px-5
+          text-sm font-semibold text-white
+          shadow-sm
+          transition-all duration-200
+          hover:-translate-y-0.5
+          hover:bg-[#435725]
+          hover:shadow-md
+          focus-visible:outline-none
+          focus-visible:ring-2
+          focus-visible:ring-[#526B2F]/30
+          focus-visible:ring-offset-2
+        "
+      >
+        <Plus className="size-[18px]" strokeWidth={2.2} />
+        Ajouter une saison
+      </Button>
+
+    </div>
+  </div>
+</Container>
 
       {/* ======================================================
           TABLEAU

@@ -1,6 +1,5 @@
 
 import { useMemo, useRef, useState } from "react";
-
 import {
   AllCommunityModule,
   ModuleRegistry,
@@ -10,28 +9,18 @@ import {
   type ICellRendererParams,
   themeQuartz,
 } from "ag-grid-community";
-
 import { AgGridProvider, AgGridReact } from "ag-grid-react";
-
 import {
   CalendarDays,
   Database,
   Download,
-  Filter,
   Pencil,
   RefreshCcw,
-  Search,
   Trash2,
-  X,
 } from "lucide-react";
-
 import { Button } from "@/components/ui/button";
 
 ModuleRegistry.registerModules([AllCommunityModule]);
-
-/* =========================================================
-   TYPE CITERNE : NOMS DU BACKEND
-========================================================= */
 
 export interface Citerne {
   citerneId: number;
@@ -41,10 +30,6 @@ export interface Citerne {
   dateFabrication: string;
 }
 
-/* =========================================================
-   PROPS
-========================================================= */
-
 interface CiterneTableProps {
   citernes: Citerne[];
   loading?: boolean;
@@ -53,31 +38,23 @@ interface CiterneTableProps {
   onRefresh?: () => void;
 }
 
-/* =========================================================
-   THÈME AG GRID
-========================================================= */
+type CapacityFilter =
+  | "all"
+  | "small"
+  | "medium"
+  | "large";
 
 const citerneTheme = themeQuartz.withParams({
   accentColor: "#556B2F",
   backgroundColor: "#ffffff",
   foregroundColor: "#172033",
   headerBackgroundColor: "#f8fafc",
-  headerTextColor: "#172033",
+  headerTextColor: "#334155",
   headerFontWeight: 600,
-  borderColor: "#e5e7eb",
-  rowBorder: {
-    style: "solid",
-    width: 1,
-    color: "#edf0f2",
-  },
+  borderColor: "#e8edf2",
   fontSize: 13,
-  cellHorizontalPadding: 14,
   spacing: 8,
 });
-
-/* =========================================================
-   FORMATAGE DES DONNÉES
-========================================================= */
 
 function formatNumber(value: number): string {
   return value.toLocaleString("fr-FR");
@@ -86,22 +63,17 @@ function formatNumber(value: number): string {
 function formatDate(value?: string): string {
   if (!value) return "—";
 
-  // Format YYYY-MM-DD
   if (/^\d{4}-\d{2}-\d{2}$/.test(value)) {
     const [year, month, day] = value.split("-");
     return `${day}/${month}/${year}`;
   }
 
-  // Format DD/MM/YYYY
   if (/^\d{2}\/\d{2}\/\d{4}$/.test(value)) {
     return value;
   }
 
-  // Format ISO avec heure
   if (value.includes("T")) {
-    const date = value.split("T")[0];
-    const [year, month, day] = date.split("-");
-
+    const [year, month, day] = value.split("T")[0].split("-");
     if (year && month && day) {
       return `${day}/${month}/${year}`;
     }
@@ -109,10 +81,6 @@ function formatDate(value?: string): string {
 
   return value;
 }
-
-/* =========================================================
-   TABLE DES CITERNES
-========================================================= */
 
 export function CiterneTable({
   citernes,
@@ -123,139 +91,154 @@ export function CiterneTable({
 }: CiterneTableProps) {
   const gridApiRef = useRef<GridApi<Citerne> | null>(null);
 
-  const [search, setSearch] = useState("");
+  const [capacityFilter, setCapacityFilter] =
+    useState<CapacityFilter>("all");
 
-  const [capacityFilter, setCapacityFilter] = useState(
-    "Toutes les capacités"
+  const [pageSize, setPageSize] = useState(5);
+  const [currentPage, setCurrentPage] = useState(1);
+
+  const filteredCiternes = useMemo(() => {
+    return citernes.filter((citerne) => {
+      const capacity = Number(citerne.capacity) || 0;
+
+      switch (capacityFilter) {
+        case "small":
+          return capacity > 0 && capacity < 3000;
+        case "medium":
+          return capacity >= 3000 && capacity < 5000;
+        case "large":
+          return capacity >= 5000;
+        default:
+          return true;
+      }
+    });
+  }, [citernes, capacityFilter]);
+
+  const filterOptions: {
+    value: CapacityFilter;
+    label: string;
+    color: string;
+    activeColor: string;
+  }[] = [
+    {
+      value: "all",
+      label: "Toutes les capacités",
+      color: "#556B2F",
+      activeColor: "#556B2F",
+    },
+    {
+      value: "small",
+      label: "Petites capacités",
+      color: "#2680eb",
+      activeColor: "#2475d0",
+    },
+    {
+      value: "medium",
+      label: "Capacités moyennes",
+      color: "#d99022",
+      activeColor: "#c78319",
+    },
+    {
+      value: "large",
+      label: "Grandes capacités",
+      color: "#9655d9",
+      activeColor: "#8545c7",
+    },
+  ];
+
+  const counts = useMemo(() => {
+    return {
+      all: citernes.length,
+      small: citernes.filter(
+        (c) => Number(c.capacity) > 0 && Number(c.capacity) < 3000
+      ).length,
+      medium: citernes.filter(
+        (c) => Number(c.capacity) >= 3000 && Number(c.capacity) < 5000
+      ).length,
+      large: citernes.filter(
+        (c) => Number(c.capacity) >= 5000
+      ).length,
+    };
+  }, [citernes]);
+
+  const totalPages = Math.max(
+    1,
+    Math.ceil(filteredCiternes.length / pageSize)
   );
 
-  /* =======================================================
-     INITIALISATION AG GRID
-  ======================================================= */
+  const safePage = Math.min(currentPage, totalPages);
+
+  const paginatedCiternes = useMemo(() => {
+    const start = (safePage - 1) * pageSize;
+    return filteredCiternes.slice(start, start + pageSize);
+  }, [filteredCiternes, safePage, pageSize]);
 
   const handleGridReady = (event: GridReadyEvent<Citerne>) => {
     gridApiRef.current = event.api;
   };
 
-  /* =======================================================
-     RECHERCHE ET FILTRES
-  ======================================================= */
-
-  const filteredCiternes = useMemo(() => {
-    let result = [...citernes];
-
-    if (search.trim()) {
-      const value = search.trim().toLowerCase();
-
-      result = result.filter((citerne) => {
-        return (
-          (citerne.reference ?? "").toLowerCase().includes(value) ||
-          (citerne.libelle ?? "").toLowerCase().includes(value) ||
-          String(citerne.capacity ?? "").includes(value) ||
-          formatDate(citerne.dateFabrication)
-            .toLowerCase()
-            .includes(value)
-        );
-      });
-    }
-
-    if (capacityFilter === "Petites capacités") {
-      result = result.filter(
-        (citerne) =>
-          citerne.capacity > 0 && citerne.capacity < 3000
-      );
-    }
-
-    if (capacityFilter === "Capacités moyennes") {
-      result = result.filter(
-        (citerne) =>
-          citerne.capacity >= 3000 && citerne.capacity < 5000
-      );
-    }
-
-    if (capacityFilter === "Grandes capacités") {
-      result = result.filter(
-        (citerne) => citerne.capacity >= 5000
-      );
-    }
-
-    return result;
-  }, [citernes, search, capacityFilter]);
-
-  /* =======================================================
-     STATISTIQUES
-  ======================================================= */
-
-  const totalCapacity = useMemo(
-    () =>
-      citernes.reduce(
-        (sum, citerne) => sum + (Number(citerne.capacity) || 0),
-        0
-      ),
-    [citernes]
-  );
-
-  const activeCount = citernes.filter(
-    (citerne) => Number(citerne.capacity) > 0
-  ).length;
-
-  const maintenanceCount = citernes.filter(
-    (citerne) => Number(citerne.capacity) <= 0
-  ).length;
-
-  /* =======================================================
-     RÉINITIALISER
-  ======================================================= */
+  const handleFilterChange = (filter: CapacityFilter) => {
+    setCapacityFilter(filter);
+    setCurrentPage(1);
+  };
 
   const handleReset = () => {
-    setSearch("");
-    setCapacityFilter("Toutes les capacités");
-    gridApiRef.current?.setFilterModel(null);
+    setCapacityFilter("all");
+    setCurrentPage(1);
+    setPageSize(5);
   };
-
-  /* =======================================================
-     EXPORT CSV
-  ======================================================= */
 
   const handleExport = () => {
-    gridApiRef.current?.exportDataAsCsv({
-      fileName: "citernes.csv",
-      columnKeys: [
-        "reference",
-        "libelle",
-        "capacity",
-        "dateFabrication",
-      ],
-    });
-  };
+    const header = [
+      "Référence",
+      "Nom",
+      "Capacité (L)",
+      "Date de fabrication",
+    ];
 
-  /* =======================================================
-     RENDU DE LA RÉFÉRENCE
-  ======================================================= */
+    const rows = filteredCiternes.map((c) => [
+      c.reference,
+      c.libelle,
+      String(c.capacity),
+      formatDate(c.dateFabrication),
+    ]);
+
+    const escapeCsv = (value: string) =>
+      `"${value.replace(/"/g, '""')}"`;
+
+    const csv = [header, ...rows]
+      .map((row) => row.map(escapeCsv).join(";"))
+      .join("\r\n");
+
+    const blob = new Blob(["\uFEFF" + csv], {
+      type: "text/csv;charset=utf-8;",
+    });
+
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "citernes.csv";
+    link.click();
+    URL.revokeObjectURL(url);
+  };
 
   const ReferenceRenderer = (
     params: ICellRendererParams<Citerne>
   ) => {
     const citerne = params.data;
-
     if (!citerne) return null;
 
     return (
       <div className="flex h-full items-center gap-3">
-        <div className="flex size-8 items-center justify-center rounded-lg bg-[#eef4e6]">
-          <Database className="size-[17px] text-[#66823A]" />
+        <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-[#eef4e6]">
+          <Database className="size-[17px] text-[#556B2F]" />
         </div>
-
-        <span className="text-sm font-semibold text-[#172033]">
+        <span className="font-semibold text-[#172033]">
           {citerne.reference || "—"}
         </span>
       </div>
     );
   };
-
-  /* =======================================================
-     RENDU DU NOM
-  ======================================================= */
 
   const NameRenderer = (
     params: ICellRendererParams<Citerne>
@@ -265,49 +248,52 @@ export function CiterneTable({
     </span>
   );
 
-  /* =======================================================
-     RENDU DE LA CAPACITÉ
-  ======================================================= */
-
   const CapacityRenderer = (
     params: ICellRendererParams<Citerne>
   ) => {
-    const value = Number(params.data?.capacity ?? 0);
+    const capacity = Number(params.data?.capacity) || 0;
+
+    let label = "Grande capacité";
+    let badgeClass = "bg-purple-50 text-purple-700";
+
+    if (capacity > 0 && capacity < 3000) {
+      label = "Petite capacité";
+      badgeClass = "bg-blue-50 text-blue-700";
+    } else if (capacity >= 3000 && capacity < 5000) {
+      label = "Capacité moyenne";
+      badgeClass = "bg-amber-50 text-amber-700";
+    }
 
     return (
-      <span className="text-sm font-medium text-[#334155]">
-        {formatNumber(Number.isFinite(value) ? value : 0)} L
-      </span>
+      <div className="flex h-full items-center gap-3">
+        <span className="font-semibold text-[#334155]">
+          {formatNumber(capacity)} L
+        </span>
+        <span
+          className={`inline-flex w-fit items-center rounded-full border px-2 py-0.5 text-[10px] font-semibold leading-4 whitespace-nowrap ${badgeClass}`}
+        >
+          {capacity <= 0 ? "Capacité nulle" : label}
+        </span>
+      </div>
     );
   };
-
-  /* =======================================================
-     RENDU DE LA DATE
-  ======================================================= */
 
   const DateRenderer = (
     params: ICellRendererParams<Citerne>
   ) => (
-    <div className="flex h-full items-center gap-2">
-      <CalendarDays className="size-4 text-[#64748b]" />
-
-      <span className="text-sm text-[#334155]">
-        {formatDate(params.data?.dateFabrication)}
-      </span>
+    <div className="flex h-full items-center gap-2 text-sm text-[#64748b]">
+      <CalendarDays className="size-4 shrink-0" />
+      <span>{formatDate(params.data?.dateFabrication)}</span>
     </div>
   );
-
-  /* =======================================================
-     COLONNES
-  ======================================================= */
 
   const columnDefs = useMemo<ColDef<Citerne>[]>(
     () => [
       {
         field: "reference",
         headerName: "Référence",
-        minWidth: 190,
-        width: 230,
+        flex: 1,
+        minWidth: 155,
         sortable: true,
         filter: "agTextColumnFilter",
         cellRenderer: ReferenceRenderer,
@@ -315,8 +301,8 @@ export function CiterneTable({
       {
         field: "libelle",
         headerName: "Nom",
-        minWidth: 210,
-        width: 250,
+        flex: 1.2,
+        minWidth: 165,
         sortable: true,
         filter: "agTextColumnFilter",
         cellRenderer: NameRenderer,
@@ -324,8 +310,8 @@ export function CiterneTable({
       {
         field: "capacity",
         headerName: "Capacité (L)",
-        minWidth: 220,
-        width: 250,
+        flex: 1.5,
+        minWidth: 235,
         sortable: true,
         filter: "agNumberColumnFilter",
         cellRenderer: CapacityRenderer,
@@ -333,8 +319,8 @@ export function CiterneTable({
       {
         field: "dateFabrication",
         headerName: "Date de fabrication",
-        minWidth: 230,
-        width: 270,
+        flex: 1,
+        minWidth: 165,
         sortable: true,
         filter: "agTextColumnFilter",
         cellRenderer: DateRenderer,
@@ -342,18 +328,14 @@ export function CiterneTable({
       {
         colId: "edit",
         headerName: "Modifier",
-        width: 115,
-        minWidth: 115,
-        maxWidth: 115,
+        width: 95,
+        minWidth: 95,
+        maxWidth: 95,
         sortable: false,
         filter: false,
         resizable: false,
-        pinned: "right",
-        cellRenderer: (
-          params: ICellRendererParams<Citerne>
-        ) => {
+        cellRenderer: (params: ICellRendererParams<Citerne>) => {
           const citerne = params.data;
-
           if (!citerne) return null;
 
           return (
@@ -363,9 +345,9 @@ export function CiterneTable({
                 title="Modifier"
                 aria-label={`Modifier ${citerne.reference}`}
                 onClick={() => onEdit?.(citerne)}
-                className="flex size-9 items-center justify-center rounded-lg bg-[#eef4e6] text-[#556B2F] transition-all hover:bg-[#dfead2] hover:text-[#3f5124]"
+                className="flex size-8 items-center justify-center rounded-lg bg-[#eef4e6] text-[#556B2F] transition hover:bg-[#dfead2]"
               >
-                <Pencil className="size-[17px]" />
+                <Pencil className="size-4" />
               </button>
             </div>
           );
@@ -374,18 +356,14 @@ export function CiterneTable({
       {
         colId: "delete",
         headerName: "Supprimer",
-        width: 125,
-        minWidth: 125,
-        maxWidth: 125,
+        width: 100,
+        minWidth: 100,
+        maxWidth: 100,
         sortable: false,
         filter: false,
         resizable: false,
-        pinned: "right",
-        cellRenderer: (
-          params: ICellRendererParams<Citerne>
-        ) => {
+        cellRenderer: (params: ICellRendererParams<Citerne>) => {
           const citerne = params.data;
-
           if (!citerne) return null;
 
           return (
@@ -395,9 +373,9 @@ export function CiterneTable({
                 title="Supprimer"
                 aria-label={`Supprimer ${citerne.reference}`}
                 onClick={() => onDelete?.(citerne)}
-                className="flex size-9 items-center justify-center rounded-lg bg-[#fdebed] text-[#ef3340] transition-all hover:bg-[#fbdadd] hover:text-[#d92735]"
+                className="flex size-8 items-center justify-center rounded-lg bg-[#fdebed] text-[#ef3340] transition hover:bg-[#fbdadd]"
               >
-                <Trash2 className="size-[17px]" />
+                <Trash2 className="size-4" />
               </button>
             </div>
           );
@@ -406,10 +384,6 @@ export function CiterneTable({
     ],
     [onEdit, onDelete]
   );
-
-  /* =======================================================
-     CONFIGURATION DES COLONNES
-  ======================================================= */
 
   const defaultColDef = useMemo<ColDef<Citerne>>(
     () => ({
@@ -425,221 +399,179 @@ export function CiterneTable({
     []
   );
 
-  /* =======================================================
-     AFFICHAGE
-  ======================================================= */
-
   return (
-    <div className="w-full">
-      <div className="overflow-hidden rounded-xl border border-[#e5e7eb] bg-white shadow-[0_2px_12px_rgba(15,23,42,0.04)]">
+    <div className="w-full space-y-3">
+      {/* Filtres de capacité */}
+      <div className="rounded-xl border border-[#edf0f2] bg-white p-2.5 shadow-[0_2px_12px_rgba(15,23,42,0.04)]">
+        <div className="flex flex-wrap items-center gap-2">
+          {filterOptions.map((filter) => {
+            const active = capacityFilter === filter.value;
 
-        {/* STATISTIQUES */}
-
-        <div className="grid grid-cols-1 gap-3 border-b border-[#edf0f2] bg-[#fafcf9] px-4 py-2.5 sm:grid-cols-2 xl:grid-cols-4">
-          <div className="flex h-[72px] items-center gap-4 rounded-lg border border-[#e5e7eb] bg-white px-5 shadow-sm">
-            <div className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-[#eef4e6]">
-              <Database className="size-[22px] text-[#66823A]" />
-            </div>
-
-            <div className="min-w-0">
-              <p className="text-[20px] font-bold leading-6 text-[#172033]">
-                {citernes.length}
-              </p>
-
-              <p className="mt-0.5 whitespace-nowrap text-[12px] text-[#7b8798]">
-                Citernes au total
-              </p>
-            </div>
-          </div>
-
-          <div className="flex h-[72px] items-center gap-4 rounded-lg border border-[#e5e7eb] bg-white px-5 shadow-sm">
-            <div className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-[#edf6ff]">
-              <Database className="size-[22px] text-[#62A5F5]" />
-            </div>
-
-            <div className="min-w-0">
-              <p className="text-[20px] font-bold leading-6 text-[#172033]">
-                {formatNumber(totalCapacity)} L
-              </p>
-
-              <p className="mt-0.5 whitespace-nowrap text-[12px] text-[#7b8798]">
-                Capacité totale
-              </p>
-            </div>
-          </div>
-
-          <div className="flex h-[72px] items-center gap-4 rounded-lg border border-[#e5e7eb] bg-white px-5 shadow-sm">
-            <div className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-[#eef6e9]">
-              <div className="flex size-6 items-center justify-center rounded-full border-2 border-[#66823A]">
-                <span className="text-xs font-bold text-[#66823A]">
-                  ✓
+            return (
+              <button
+                key={filter.value}
+                type="button"
+                onClick={() => handleFilterChange(filter.value)}
+                className={`flex min-h-10 flex-1 items-center justify-center gap-2 rounded-lg border px-3 py-2 text-xs font-semibold transition-all sm:flex-none ${
+                  active
+                    ? "border-transparent text-white shadow-sm"
+                    : "border-[#edf0f2] bg-white text-[#475569] hover:bg-[#f8fafc]"
+                }`}
+                style={
+                  active
+                    ? { backgroundColor: filter.activeColor }
+                    : undefined
+                }
+              >
+                <Database
+                  className="size-4 shrink-0"
+                  style={{ color: active ? "#ffffff" : filter.color }}
+                />
+                <span>{filter.label}</span>
+                <span
+                  className={`flex size-5 items-center justify-center rounded-full text-[10px] font-bold ${
+                    active
+                      ? "bg-white/20 text-white"
+                      : "bg-[#f1f5f9] text-[#64748b]"
+                  }`}
+                >
+                  {counts[filter.value]}
                 </span>
-              </div>
-            </div>
+              </button>
+            );
+          })}
 
-            <div className="min-w-0">
-              <p className="text-[20px] font-bold leading-6 text-[#172033]">
-                {activeCount}
-              </p>
+          <div className="ml-auto flex flex-wrap items-center gap-2">
+            
+<Button
+  type="button"
+  variant="outline"
+  onClick={handleReset}
+  className="h-10 min-w-[200px] rounded-lg border-[#F59E0B] bg-[#FFF7E6] px-5 text-sm font-medium text-[#B96B00] transition-colors hover:border-[#D97706] hover:bg-[#FEF0CC] hover:text-[#92400E]"
+>
+  <RefreshCcw className="mr-2 size-4" />
+  Réinitialiser
+</Button>
 
-              <p className="mt-0.5 whitespace-nowrap text-[12px] text-[#7b8798]">
-                Citernes avec capacité positive
-              </p>
-            </div>
-          </div>
 
-          <div className="flex h-[72px] items-center gap-4 rounded-lg border border-[#e5e7eb] bg-white px-5 shadow-sm">
-            <div className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-[#ffecef]">
-              <X className="size-6 text-[#ef3340]" />
-            </div>
+            
 
-            <div className="min-w-0">
-              <p className="text-[20px] font-bold leading-6 text-[#172033]">
-                {maintenanceCount}
-              </p>
 
-              <p className="mt-0.5 whitespace-nowrap text-[12px] text-[#7b8798]">
-                Capacité absente ou nulle
-              </p>
-            </div>
+<Button
+  type="button"
+  variant="outline"
+  onClick={handleExport}
+  disabled={filteredCiternes.length === 0}
+  className="h-10 min-w-[125px] rounded-lg border-[#556B2F] bg-[#F5F8F1] px-5 text-sm font-semibold tracking-[0.01em] text-[#556B2F] shadow-sm transition-all duration-200 hover:border-[#465A27] hover:bg-[#EAF0E2] hover:text-[#465A27] disabled:cursor-not-allowed disabled:opacity-50"
+>
+  <Download className="mr-2 size-4 shrink-0" strokeWidth={2} />
+  Exporter
+</Button>
+
+
+
           </div>
         </div>
+      </div>
 
-        {/* RECHERCHE ET ACTIONS */}
+      
+{/* Tableau et pagination */}
+<div className="w-full overflow-hidden rounded-xl border border-[#edf0f2] bg-white shadow-[0_2px_12px_rgba(15,23,42,0.04)]">
+  <div className="w-full overflow-hidden">
+    <AgGridProvider modules={[AllCommunityModule]}>
+      <AgGridReact<Citerne>
+        rowData={paginatedCiternes}
+        columnDefs={columnDefs}
+        defaultColDef={defaultColDef}
+        theme={citerneTheme}
+        domLayout="autoHeight"
+        rowHeight={44}
+        headerHeight={40}
+        animateRows
+        suppressCellFocus
+        suppressPaginationPanel
+        getRowId={(params) => String(params.data.citerneId)}
+        onGridReady={handleGridReady}
+        overlayNoRowsTemplate="<span>Aucune citerne trouvée</span>"
+        localeText={{
+          loadingOoo: "Chargement...",
+          noRowsToShow: "Aucune citerne trouvée",
+          filterOoo: "Filtrer...",
+          equals: "Égal à",
+          notEqual: "Différent de",
+          contains: "Contient",
+          notContains: "Ne contient pas",
+          startsWith: "Commence par",
+          endsWith: "Se termine par",
+          lessThan: "Inférieur à",
+          lessThanOrEqual: "Inférieur ou égal à",
+          greaterThan: "Supérieur à",
+          greaterThanOrEqual: "Supérieur ou égal à",
+          andCondition: "ET",
+          orCondition: "OU",
+          applyFilter: "Appliquer",
+          resetFilter: "Réinitialiser",
+          clearFilter: "Effacer",
+        }}
+      />
+    </AgGridProvider>
+  </div>
 
-        <div className="flex flex-col gap-3 border-b border-[#edf0f2] p-4 xl:flex-row xl:items-center">
-          <div className="relative flex-1">
-            <Search className="pointer-events-none absolute left-3 top-1/2 size-[18px] -translate-y-1/2 text-[#64748b]" />
-
-            <input
-              type="text"
-              value={search}
-              onChange={(event) => setSearch(event.target.value)}
-              placeholder="Rechercher une citerne (référence, nom...)"
-              className="h-11 w-full rounded-lg border border-[#dfe4e9] bg-white pl-10 pr-4 text-sm text-[#334155] outline-none transition-all placeholder:text-[#94a3b8] focus:border-[#556B2F] focus:ring-2 focus:ring-[#556B2F]/10"
-            />
-          </div>
-
-          <div className="relative">
-            <Filter className="pointer-events-none absolute left-3 top-1/2 size-[17px] -translate-y-1/2 text-[#64748b]" />
-
+        {/* Pagination personnalisée */}
+        <div className="flex flex-col gap-3 border-t border-[#edf0f2] px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-center gap-3 text-xs text-[#64748b]">
+            <label htmlFor="page-size">Lignes par page</label>
             <select
-              value={capacityFilter}
-              onChange={(event) =>
-                setCapacityFilter(event.target.value)
-              }
-              className="h-11 w-full appearance-none rounded-lg border border-[#dfe4e9] bg-white pl-10 pr-9 text-sm font-medium text-[#334155] outline-none transition-all focus:border-[#556B2F] focus:ring-2 focus:ring-[#556B2F]/10 xl:w-[210px]"
+              id="page-size"
+              value={pageSize}
+              onChange={(event) => {
+                setPageSize(Number(event.target.value));
+                setCurrentPage(1);
+              }}
+              className="h-8 rounded-md border border-[#e2e8f0] bg-white px-3 text-xs text-[#334155] outline-none focus:border-[#556B2F]"
             >
-              <option>Toutes les capacités</option>
-              <option>Petites capacités</option>
-              <option>Capacités moyennes</option>
-              <option>Grandes capacités</option>
+              <option value={5}>5</option>
+              <option value={10}>10</option>
+              <option value={20}>20</option>
+              <option value={50}>50</option>
             </select>
           </div>
 
-          <Button
-            type="button"
-            variant="outline"
-            onClick={handleReset}
-            className="h-11 rounded-lg border-[#dfe4e9] px-4 text-[#334155] hover:border-[#556B2F] hover:bg-[#f5f8f1] hover:text-[#556B2F]"
-          >
-            <RefreshCcw className="size-4" />
-            Réinitialiser
-          </Button>
+          <div className="flex items-center justify-between gap-2 sm:justify-end">
+            <span className="mr-1 text-xs text-[#64748b]">
+              {filteredCiternes.length === 0
+                ? "0 résultat"
+                : `${(safePage - 1) * pageSize + 1} à ${Math.min(
+                    safePage * pageSize,
+                    filteredCiternes.length
+                  )} sur ${filteredCiternes.length}`}
+            </span>
 
-          <Button
-            type="button"
-            variant="outline"
-            onClick={handleExport}
-            disabled={citernes.length === 0}
-            className="h-11 rounded-lg border-[#dfe4e9] px-4 text-[#334155] hover:border-[#556B2F] hover:bg-[#f5f8f1] hover:text-[#556B2F]"
-          >
-            <Download className="size-4" />
-            Exporter
-          </Button>
+            <button
+              type="button"
+              aria-label="Page précédente"
+              disabled={safePage <= 1}
+              onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}
+              className="flex size-8 items-center justify-center rounded-lg border border-[#e2e8f0] text-[#64748b] transition hover:bg-[#f8fafc] disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              ‹
+            </button>
 
-          <Button
-            type="button"
-            variant="outline"
-            onClick={onRefresh}
-            disabled={loading}
-            className="h-11 rounded-lg border-[#dfe4e9] px-4 text-[#334155] hover:border-[#556B2F] hover:bg-[#f5f8f1] hover:text-[#556B2F]"
-          >
-            <RefreshCcw
-              className={`size-4 ${loading ? "animate-spin" : ""}`}
-            />
-            Actualiser
-          </Button>
-        </div>
+            <span className="flex size-8 items-center justify-center rounded-lg bg-[#556B2F] text-xs font-semibold text-white">
+              {safePage}
+            </span>
 
-        {/* RÉSULTATS */}
-
-        <div className="px-4 pb-2 pt-3 text-sm text-[#64748b]">
-          {loading
-            ? "Chargement des citernes..."
-            : `${filteredCiternes.length} résultat(s) sur ${citernes.length}`}
-        </div>
-
-        {/* TABLEAU */}
-
-        <div className="w-full overflow-x-auto px-4 pb-4">
-          <div
-            style={{
-              width: "100%",
-              minWidth: "1080px",
-              height: "600px",
-            }}
-          >
-            <AgGridProvider modules={[AllCommunityModule]}>
-              <AgGridReact<Citerne>
-                rowData={filteredCiternes}
-                columnDefs={columnDefs}
-                defaultColDef={defaultColDef}
-                theme={citerneTheme}
-                rowHeight={58}
-                headerHeight={50}
-                pagination
-                paginationPageSize={10}
-                paginationPageSizeSelector={[5, 10, 20, 50]}
-                animateRows
-                suppressCellFocus
-                getRowId={(params) =>
-                  String(params.data.citerneId)
-                }
-                onGridReady={handleGridReady}
-                overlayLoadingTemplate="<span>Chargement des citernes...</span>"
-                overlayNoRowsTemplate="<span>Aucune citerne trouvée</span>"
-                localeText={{
-                  page: "Page",
-                  more: "Plus",
-                  to: "à",
-                  of: "sur",
-                  next: "Suivant",
-                  last: "Dernier",
-                  first: "Premier",
-                  previous: "Précédent",
-                  loadingOoo: "Chargement...",
-                  noRowsToShow: "Aucune citerne trouvée",
-                  pageSizeSelectorLabel: "Lignes par page",
-                  filterOoo: "Filtrer...",
-                  equals: "Égal à",
-                  notEqual: "Différent de",
-                  contains: "Contient",
-                  notContains: "Ne contient pas",
-                  startsWith: "Commence par",
-                  endsWith: "Se termine par",
-                  lessThan: "Inférieur à",
-                  lessThanOrEqual: "Inférieur ou égal à",
-                  greaterThan: "Supérieur à",
-                  greaterThanOrEqual: "Supérieur ou égal à",
-                  andCondition: "ET",
-                  orCondition: "OU",
-                  applyFilter: "Appliquer",
-                  resetFilter: "Réinitialiser",
-                  clearFilter: "Effacer",
-                }}
-              />
-            </AgGridProvider>
+            <button
+              type="button"
+              aria-label="Page suivante"
+              disabled={safePage >= totalPages}
+              onClick={() =>
+                setCurrentPage((page) => Math.min(totalPages, page + 1))
+              }
+              className="flex size-8 items-center justify-center rounded-lg border border-[#e2e8f0] text-[#64748b] transition hover:bg-[#f8fafc] disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              ›
+            </button>
           </div>
         </div>
       </div>

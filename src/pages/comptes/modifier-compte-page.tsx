@@ -1,15 +1,15 @@
-import { useEffect, useState } from 'react';
 
-import {
-  useNavigate,
-  useParams,
-} from 'react-router-dom';
+import { useEffect, useMemo, useState } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 
 import {
   ArrowLeft,
+  BadgeDollarSign,
   Check,
-  MapPin,
+  ChevronDown,
+  ChevronRight,
   Mail,
+  MapPin,
   Phone,
   Save,
   ShieldCheck,
@@ -18,7 +18,7 @@ import {
 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
-
+import { Container } from '@/components/common/container';
 
 /* ============================================================
    TYPE COMPTE
@@ -36,13 +36,23 @@ interface Compte {
   baseCompteId: number | null;
 }
 
+interface FormData {
+  name: string;
+  adresse: string;
+  mobile: string;
+  mail: string;
+  statusId: string;
+  priceConv: string;
+  isBaseCompte: boolean;
+  baseCompteId: string;
+}
 
 /* ============================================================
-   DONNÉES STATIQUES
+   DONNÉES DE DÉMONSTRATION
+   À remplacer par les données de ton API / Supabase
 ============================================================ */
 
 const defaultComptes: Compte[] = [
-
   {
     compteId: 1,
     name: 'Ahmed Ben Ali',
@@ -54,7 +64,6 @@ const defaultComptes: Compte[] = [
     isBaseCompte: true,
     baseCompteId: null,
   },
-
   {
     compteId: 2,
     name: 'Client 1',
@@ -66,7 +75,6 @@ const defaultComptes: Compte[] = [
     isBaseCompte: false,
     baseCompteId: 1,
   },
-
   {
     compteId: 3,
     name: 'Fournisseur 1',
@@ -78,7 +86,6 @@ const defaultComptes: Compte[] = [
     isBaseCompte: false,
     baseCompteId: 1,
   },
-
   {
     compteId: 4,
     name: 'Coopérative',
@@ -90,7 +97,6 @@ const defaultComptes: Compte[] = [
     isBaseCompte: true,
     baseCompteId: null,
   },
-
   {
     compteId: 5,
     name: 'Client 2',
@@ -102,18 +108,17 @@ const defaultComptes: Compte[] = [
     isBaseCompte: false,
     baseCompteId: 4,
   },
-
   {
-  compteId: 6,
-  name: 'Fournisseur 2',
-  adresse: 'Gabès',
-  mobile: '55664433',
-  mail: 'fournisseur2@gmail.com',
-  statusId: 1,
-  priceConv: 0.9,
-  isBaseCompte: false,
-  baseCompteId: 4,
-},
+    compteId: 6,
+    name: 'Fournisseur 2',
+    adresse: 'Gabès',
+    mobile: '55664433',
+    mail: 'fournisseur2@gmail.com',
+    statusId: 1,
+    priceConv: 0.9,
+    isBaseCompte: false,
+    baseCompteId: 4,
+  },
   {
     compteId: 7,
     name: 'Client 3',
@@ -125,7 +130,6 @@ const defaultComptes: Compte[] = [
     isBaseCompte: false,
     baseCompteId: 4,
   },
-
   {
     compteId: 8,
     name: 'Coopérative 2',
@@ -137,7 +141,6 @@ const defaultComptes: Compte[] = [
     isBaseCompte: true,
     baseCompteId: null,
   },
-
   {
     compteId: 9,
     name: 'Client 4',
@@ -149,7 +152,6 @@ const defaultComptes: Compte[] = [
     isBaseCompte: false,
     baseCompteId: 8,
   },
-
   {
     compteId: 10,
     name: 'Fournisseur 3',
@@ -161,7 +163,6 @@ const defaultComptes: Compte[] = [
     isBaseCompte: false,
     baseCompteId: 8,
   },
-
   {
     compteId: 11,
     name: 'Client 5',
@@ -173,7 +174,6 @@ const defaultComptes: Compte[] = [
     isBaseCompte: false,
     baseCompteId: 8,
   },
-
   {
     compteId: 12,
     name: 'Coopérative 3',
@@ -185,747 +185,635 @@ const defaultComptes: Compte[] = [
     isBaseCompte: true,
     baseCompteId: null,
   },
-
 ];
 
+const initialFormData: FormData = {
+  name: '',
+  adresse: '',
+  mobile: '',
+  mail: '',
+  statusId: '1',
+  priceConv: '',
+  isBaseCompte: false,
+  baseCompteId: '',
+};
 
 /* ============================================================
    PAGE MODIFIER COMPTE
 ============================================================ */
 
 export function ModifierComptePage() {
+  const navigate = useNavigate();
+  const { id } = useParams<{ id: string }>();
 
-  const navigate =
-    useNavigate();
+  const [formData, setFormData] =
+    useState<FormData>(initialFormData);
 
-  const { id } =
-    useParams<{
-      id: string;
-    }>();
+  const [showSuccessModal, setShowSuccessModal] =
+    useState(false);
 
+  const [errorMessage, setErrorMessage] =
+    useState('');
 
-  /* ==========================================================
-     ÉTAT DU FORMULAIRE
-  ========================================================== */
+  /* ============================================================
+     COMPTES DE BASE DISPONIBLES
+  ============================================================ */
 
-  const [
-    formData,
-    setFormData,
-  ] = useState({
+  const comptesDeBase = useMemo(
+    () =>
+      defaultComptes.filter(
+        (compte) =>
+          compte.isBaseCompte &&
+          compte.compteId !== Number(id),
+      ),
+    [id],
+  );
 
-    name: '',
-
-    adresse: '',
-
-    mobile: '',
-
-    mail: '',
-
-    statusId: '1',
-
-    priceConv: '',
-
-    isBaseCompte: false,
-
-    baseCompteId: '',
-
-  });
-
-
-  /* ==========================================================
-     MODALE SUCCÈS
-  ========================================================== */
-
-  const [
-    showSuccessModal,
-    setShowSuccessModal,
-  ] = useState(false);
-
-
-  /* ==========================================================
-     CHARGER LE COMPTE
-  ========================================================== */
+  /* ============================================================
+     CHARGER LE COMPTE À MODIFIER
+  ============================================================ */
 
   useEffect(() => {
-
     if (!id) {
+      navigate('/store-admin/accounts');
       return;
     }
 
-    const compteId =
-      Number(id);
-
-    const compte =
-      defaultComptes.find(
-        (item) =>
-          item.compteId === compteId,
-      );
+    const compte = defaultComptes.find(
+      (item) => item.compteId === Number(id),
+    );
 
     if (!compte) {
-      navigate(
-        '/store-admin/accounts',
-      );
-
+      navigate('/store-admin/accounts');
       return;
     }
 
-
     setFormData({
-
-      name:
-        compte.name,
-
-      adresse:
-        compte.adresse,
-
-      mobile:
-        compte.mobile,
-
-      mail:
-        compte.mail,
-
-      statusId:
-        compte.statusId.toString(),
-
-      priceConv:
-        compte.priceConv.toString(),
-
-      isBaseCompte:
-        compte.isBaseCompte,
-
+      name: compte.name,
+      adresse: compte.adresse,
+      mobile: compte.mobile,
+      mail: compte.mail,
+      statusId: String(compte.statusId),
+      priceConv: String(compte.priceConv),
+      isBaseCompte: compte.isBaseCompte,
       baseCompteId:
-        compte.baseCompteId !== null
-          ? compte.baseCompteId.toString()
-          : '',
-
+        compte.baseCompteId === null
+          ? ''
+          : String(compte.baseCompteId),
     });
+  }, [id, navigate]);
 
-  }, [
-    id,
-    navigate,
-  ]);
-
-
-  /* ==========================================================
-     CHANGEMENT INPUT
-  ========================================================== */
+  /* ============================================================
+     MODIFICATION DES CHAMPS
+  ============================================================ */
 
   const handleChange = (
     event: React.ChangeEvent<
-      HTMLInputElement |
-      HTMLSelectElement
+      HTMLInputElement | HTMLSelectElement
     >,
   ) => {
+    const { name, value } = event.target;
 
-    const {
-      name,
-      value,
-    } = event.target;
+    setErrorMessage('');
 
-
-    setFormData(
-      (current) => ({
-
-        ...current,
-
-        [name]:
-          value,
-
-      }),
-    );
-
+    setFormData((current) => ({
+      ...current,
+      [name]: value,
+    }));
   };
 
-
-  /* ==========================================================
-     CHANGEMENT COMPTE DE BASE
-  ========================================================== */
+  /* ============================================================
+     COMPTE DE BASE
+  ============================================================ */
 
   const handleBaseCompteChange = (
     event: React.ChangeEvent<HTMLInputElement>,
   ) => {
+    const checked = event.target.checked;
 
-    const checked =
-      event.target.checked;
+    setErrorMessage('');
 
-
-    setFormData(
-      (current) => ({
-
-        ...current,
-
-        isBaseCompte:
-          checked,
-
-        baseCompteId:
-          checked
-            ? ''
-            : current.baseCompteId,
-
-      }),
-    );
-
+    setFormData((current) => ({
+      ...current,
+      isBaseCompte: checked,
+      baseCompteId: checked ? '' : current.baseCompteId,
+    }));
   };
 
-
-  /* ==========================================================
-     ENREGISTRER
-  ========================================================== */
-
-  const handleSubmit = (
-    event: React.FormEvent,
-  ) => {
-
-    event.preventDefault();
-
-
-    const modifiedCompte: Compte = {
-
-      compteId:
-        Number(id),
-
-      name:
-        formData.name,
-
-      adresse:
-        formData.adresse,
-
-      mobile:
-        formData.mobile,
-
-      mail:
-        formData.mail,
-
-      statusId:
-        Number(
-          formData.statusId,
-        ),
-
-      priceConv:
-        Number(
-          formData.priceConv || 0,
-        ),
-
-      isBaseCompte:
-        formData.isBaseCompte,
-
-      baseCompteId:
-        formData.isBaseCompte ||
-        !formData.baseCompteId
-          ? null
-          : Number(
-              formData.baseCompteId,
-            ),
-
-    };
-
-
-    console.log(
-      'Compte modifié :',
-      modifiedCompte,
-    );
-
-
-    setShowSuccessModal(
-      true,
-    );
-
-  };
-
-
-  /* ==========================================================
+  /* ============================================================
      ANNULER
-  ========================================================== */
+  ============================================================ */
 
   const handleCancel = () => {
-
-    navigate(
-      '/store-admin/accounts',
-    );
-
+    navigate('/store-admin/accounts');
   };
 
+  /* ============================================================
+     ENREGISTRER LES MODIFICATIONS
+  ============================================================ */
 
-  /* ==========================================================
-     OK SUCCÈS
-  ========================================================== */
+  const handleSubmit = (
+    event: React.FormEvent<HTMLFormElement>,
+  ) => {
+    event.preventDefault();
+    setErrorMessage('');
+
+    if (!id) {
+      setErrorMessage('Identifiant du compte introuvable.');
+      return;
+    }
+
+    if (
+      !formData.isBaseCompte &&
+      !formData.baseCompteId
+    ) {
+      setErrorMessage(
+        'Veuillez sélectionner un compte de base associé.',
+      );
+      return;
+    }
+
+    const selectedBaseId =
+      formData.baseCompteId === ''
+        ? null
+        : Number(formData.baseCompteId);
+
+    const modifiedCompte: Compte = {
+      compteId: Number(id),
+      name: formData.name.trim(),
+      adresse: formData.adresse.trim(),
+      mobile: formData.mobile.trim(),
+      mail: formData.mail.trim(),
+      statusId: Number(formData.statusId),
+      priceConv: Number(formData.priceConv),
+      isBaseCompte: formData.isBaseCompte,
+      baseCompteId: formData.isBaseCompte
+        ? null
+        : selectedBaseId,
+    };
+
+    /*
+      INTÉGRATION À PRÉVOIR :
+      Envoyer modifiedCompte à ton API ou à Supabase.
+      Le console.log ci-dessous permet seulement de vérifier
+      les données ; il ne modifie pas encore la liste réelle.
+    */
+
+    console.log('Compte modifié :', modifiedCompte);
+
+    setShowSuccessModal(true);
+  };
 
   const handleSuccessOk = () => {
-
-    navigate(
-      '/store-admin/accounts',
-    );
-
+    setShowSuccessModal(false);
+    navigate('/store-admin/accounts');
   };
 
-
-  /* ==========================================================
+  /* ============================================================
      RENDER
-  ========================================================== */
+  ============================================================ */
 
   return (
-    <div className="mx-auto w-full max-w-4xl px-4 py-6">
+    <>
+      {/* ========================================================
+          EN-TÊTE DE PAGE
+      ======================================================== */}
 
-
-      {/* ======================================================
-          BOUTON RETOUR
-      ====================================================== */}
-
-      <button
-        type="button"
-        onClick={handleCancel}
-        className="mb-5 flex items-center gap-2 text-sm font-medium text-[#556B2F] transition hover:text-[#3f5124]"
-      >
-
-        <ArrowLeft className="size-4" />
-
-        Retour aux comptes
-
-      </button>
-
-
-      {/* ======================================================
-          FORMULAIRE
-      ====================================================== */}
-
-      <div className="overflow-hidden rounded-xl border border-border bg-white shadow-sm">
-
-
-        {/* ====================================================
-            HEADER
-        ==================================================== */}
-
-        <div className="border-b border-border px-6 py-5">
-
-          <h1 className="text-xl font-bold text-foreground">
-
-            Modifier le compte
-
-          </h1>
-
-          <p className="mt-1 text-sm text-muted-foreground">
-
-            Modifiez les informations du compte puis
-            enregistrez les changements.
-
-          </p>
-
-        </div>
-
-
-        {/* ====================================================
-            BODY
-        ==================================================== */}
-
-        <form
-          onSubmit={handleSubmit}
-        >
-
-          <div className="grid grid-cols-1 gap-x-6 gap-y-5 px-6 py-6 md:grid-cols-2">
-
-
-            {/* ==================================================
-                NOM
-            ================================================== */}
-
-            <div>
-
-              <label
-                htmlFor="name"
-                className="mb-2 block text-sm font-medium text-foreground"
-              >
-
-                Nom du compte
-                <span className="text-red-500">
-                  {' *'}
-                </span>
-
-              </label>
-
-              <div className="relative">
-
-                <UserRound className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-
-                <input
-                  id="name"
-                  name="name"
-                  type="text"
-                  value={formData.name}
-                  onChange={handleChange}
-                  required
-                  placeholder="Nom du compte"
-                  className="h-11 w-full rounded-md border border-input bg-background pl-10 pr-3 text-sm outline-none transition focus:border-[#556B2F] focus:ring-1 focus:ring-[#556B2F]"
-                />
-
+      <Container>
+        <div className="border-b border-[#e8ece5] py-5 sm:py-6">
+          <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex min-w-0 items-start gap-4">
+              <div className="flex size-12 shrink-0 items-center justify-center rounded-xl border border-[#dce7cf] bg-[#eef4e6] text-[#556B2F] shadow-sm">
+                <UserRound className="size-6" />
               </div>
 
-            </div>
-
-
-            {/* ==================================================
-                ADRESSE
-            ================================================== */}
-
-            <div>
-
-              <label
-                htmlFor="adresse"
-                className="mb-2 block text-sm font-medium text-foreground"
-              >
-
-                Adresse
-                <span className="text-red-500">
-                  {' *'}
-                </span>
-
-              </label>
-
-              <div className="relative">
-
-                <MapPin className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-
-                <input
-                  id="adresse"
-                  name="adresse"
-                  type="text"
-                  value={formData.adresse}
-                  onChange={handleChange}
-                  required
-                  placeholder="Adresse"
-                  className="h-11 w-full rounded-md border border-input bg-background pl-10 pr-3 text-sm outline-none transition focus:border-[#556B2F] focus:ring-1 focus:ring-[#556B2F]"
-                />
-
-              </div>
-
-            </div>
-
-
-            {/* ==================================================
-                MOBILE
-            ================================================== */}
-
-            <div>
-
-              <label
-                htmlFor="mobile"
-                className="mb-2 block text-sm font-medium text-foreground"
-              >
-
-                Numéro mobile
-                <span className="text-red-500">
-                  {' *'}
-                </span>
-
-              </label>
-
-              <div className="relative">
-
-                <Phone className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-
-                <input
-                  id="mobile"
-                  name="mobile"
-                  type="tel"
-                  value={formData.mobile}
-                  onChange={handleChange}
-                  required
-                  placeholder="Ex : 22123456"
-                  className="h-11 w-full rounded-md border border-input bg-background pl-10 pr-3 text-sm outline-none transition focus:border-[#556B2F] focus:ring-1 focus:ring-[#556B2F]"
-                />
-
-              </div>
-
-            </div>
-
-
-            {/* ==================================================
-                EMAIL
-            ================================================== */}
-
-            <div>
-
-              <label
-                htmlFor="mail"
-                className="mb-2 block text-sm font-medium text-foreground"
-              >
-
-                Adresse e-mail
-
-              </label>
-
-              <div className="relative">
-
-                <Mail className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-
-                <input
-                  id="mail"
-                  name="mail"
-                  type="email"
-                  value={formData.mail}
-                  onChange={handleChange}
-                  placeholder="exemple@email.com"
-                  className="h-11 w-full rounded-md border border-input bg-background pl-10 pr-3 text-sm outline-none transition focus:border-[#556B2F] focus:ring-1 focus:ring-[#556B2F]"
-                />
-
-              </div>
-
-            </div>
-
-
-            {/* ==================================================
-                STATUT
-            ================================================== */}
-
-            <div>
-
-              <label
-                htmlFor="statusId"
-                className="mb-2 block text-sm font-medium text-foreground"
-              >
-
-                Statut
-
-                <span className="text-red-500">
-                  {' *'}
-                </span>
-
-              </label>
-
-              <div className="relative">
-
-                <ShieldCheck className="pointer-events-none absolute left-3 top-1/2 z-10 size-4 -translate-y-1/2 text-muted-foreground" />
-
-                <select
-                  id="statusId"
-                  name="statusId"
-                  value={formData.statusId}
-                  onChange={handleChange}
-                  required
-                  className="h-11 w-full appearance-none rounded-md border border-input bg-background pl-10 pr-3 text-sm outline-none transition focus:border-[#556B2F] focus:ring-1 focus:ring-[#556B2F]"
+              <div className="min-w-0">
+                <nav
+                  aria-label="Fil d'Ariane"
+                  className="mb-2 flex flex-wrap items-center gap-2 text-xs text-[#94a3b8] sm:text-sm"
                 >
+                  <span>Paramétrage</span>
+                  <ChevronRight className="size-3.5" />
+                  <button
+                    type="button"
+                    onClick={handleCancel}
+                    className="transition hover:text-[#556B2F]"
+                  >
+                    Comptes
+                  </button>
+                  <ChevronRight className="size-3.5" />
+                  <span className="font-medium text-[#556B2F]">
+                    Modification
+                  </span>
+                </nav>
 
-                  <option value="1">
-                    Actif
-                  </option>
+                <div className="flex flex-wrap items-center gap-2">
+                  <h1 className="text-2xl font-bold tracking-tight text-[#172033] sm:text-3xl">
+                    Modifier le compte
+                  </h1>
 
-                  <option value="2">
-                    Inactif
-                  </option>
+                  <span className="inline-flex items-center rounded-md border border-[#dce7cf] bg-[#f4f7ef] px-2.5 py-1 text-[11px] font-semibold text-[#556B2F]">
+                    <span className="mr-1.5 size-1.5 rounded-full bg-[#6d873f]" />
+                    Modification
+                  </span>
+                </div>
 
-                </select>
-
+                <p className="mt-2 max-w-2xl text-sm leading-6 text-[#64748b]">
+                  Modifiez les informations du compte et
+                  enregistrez les changements.
+                </p>
               </div>
-
             </div>
-
-
-            {/* ==================================================
-                PRIX CONVERSION
-            ================================================== */}
-
-            <div>
-
-              <label
-                htmlFor="priceConv"
-                className="mb-2 block text-sm font-medium text-foreground"
-              >
-
-                Prix de conversion
-
-              </label>
-
-              <div className="relative">
-
-                <input
-                  id="priceConv"
-                  name="priceConv"
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  value={formData.priceConv}
-                  onChange={handleChange}
-                  placeholder="Ex : 1.25"
-                  className="h-11 w-full rounded-md border border-input bg-background px-3 pr-12 text-sm outline-none transition focus:border-[#556B2F] focus:ring-1 focus:ring-[#556B2F]"
-                />
-
-                <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
-
-                  DT
-
-                </span>
-
-              </div>
-
-            </div>
-
-
-            {/* ==================================================
-                COMPTE DE BASE
-            ================================================== */}
-
-            <div className="flex items-end">
-
-              <label className="flex h-11 w-full cursor-pointer items-center gap-3 rounded-md border border-input bg-background px-4">
-
-                <input
-                  type="checkbox"
-                  checked={
-                    formData.isBaseCompte
-                  }
-                  onChange={
-                    handleBaseCompteChange
-                  }
-                  className="size-4 accent-[#556B2F]"
-                />
-
-                <span className="text-sm font-medium text-foreground">
-
-                  Ce compte est un compte de base
-
-                </span>
-
-              </label>
-
-            </div>
-
-
-            {/* ==================================================
-                COMPTE DE BASE ID
-            ================================================== */}
-
-            <div>
-
-              <label
-                htmlFor="baseCompteId"
-                className="mb-2 block text-sm font-medium text-foreground"
-              >
-
-                ID du compte de base
-
-              </label>
-
-              <input
-                id="baseCompteId"
-                name="baseCompteId"
-                type="number"
-                min="1"
-                value={formData.baseCompteId}
-                onChange={handleChange}
-                disabled={
-                  formData.isBaseCompte
-                }
-                placeholder="Ex : 1"
-                className="h-11 w-full rounded-md border border-input bg-background px-3 text-sm outline-none transition disabled:cursor-not-allowed disabled:bg-muted focus:border-[#556B2F] focus:ring-1 focus:ring-[#556B2F]"
-              />
-
-            </div>
-
-          </div>
-
-
-          {/* ====================================================
-              FOOTER
-          ==================================================== */}
-
-          <div className="flex items-center justify-end gap-3 border-t border-border px-6 py-4">
 
             <Button
               type="button"
               variant="outline"
               onClick={handleCancel}
-              className="h-11 min-w-[110px]"
+              className="h-10 shrink-0 border-[#dfe5db] bg-white px-4 text-sm font-medium text-[#475569] hover:border-[#c9d9b6] hover:bg-[#f5f8f1] hover:text-[#556B2F]"
             >
-
-              <X className="size-4" />
-
-              Annuler
-
+              <ArrowLeft className="mr-2 size-4" />
+              Retour aux comptes
             </Button>
-
-            <Button
-              type="submit"
-              className="h-11 min-w-[145px] bg-[#556B2F] hover:bg-[#465A27]"
-            >
-
-              <Save className="size-4" />
-
-              Enregistrer
-
-            </Button>
-
           </div>
+        </div>
+      </Container>
 
-        </form>
+      {/* ========================================================
+          FORMULAIRE PLEINE LARGEUR
+      ======================================================== */}
 
-      </div>
+      <Container>
+        <div className="w-full py-6 sm:py-8">
+          <form
+            onSubmit={handleSubmit}
+            className="w-full overflow-hidden rounded-xl border border-[#e2e8df] bg-white shadow-[0_4px_20px_rgba(15,23,42,0.045)]"
+          >
+            {/* EN-TÊTE DU FORMULAIRE */}
 
-
-      {/* ======================================================
-          MODALE SUCCÈS
-      ====================================================== */}
-
-      {showSuccessModal && (
-
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4"
-        >
-
-          <div className="w-full max-w-[380px] rounded-xl bg-white p-7 text-center shadow-2xl">
-
-
-            {/* ==================================================
-                ICÔNE
-            ================================================== */}
-
-            <div className="flex justify-center">
-
-              <div className="flex size-16 items-center justify-center rounded-full bg-[#eef4e6]">
-
-                <Check className="size-9 text-[#556B2F]" />
-
+            <div className="flex items-start gap-3 border-b border-[#edf0eb] px-5 py-5 sm:px-8">
+              <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-[#f2f6ed] text-[#556B2F]">
+                <ShieldCheck className="size-5" />
               </div>
 
+              <div>
+                <h2 className="text-base font-bold text-[#172033] sm:text-lg">
+                  Informations du compte
+                </h2>
+
+                <p className="mt-1 text-sm leading-5 text-[#64748b]">
+                  Les champs marqués d'un astérisque sont
+                  obligatoires.
+                </p>
+              </div>
             </div>
 
+            {/* CHAMPS DU FORMULAIRE */}
 
-            {/* ==================================================
-                TEXTE
-            ================================================== */}
+            <div className="px-5 py-6 sm:px-8 sm:py-8">
+              <div className="grid grid-cols-1 gap-x-8 gap-y-6 md:grid-cols-2 xl:grid-cols-3">
+                {/* NOM */}
 
-            <h2 className="mt-4 text-xl font-bold text-gray-900">
+                <div>
+                  <label
+                    htmlFor="name"
+                    className="mb-2 block text-sm font-semibold text-[#334155]"
+                  >
+                    Nom du compte
+                    <span className="ml-1 text-red-500">*</span>
+                  </label>
 
-              Compte modifié avec succès
+                  <div className="relative">
+                    <UserRound className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-[#94a3b8]" />
 
+                    <input
+                      id="name"
+                      name="name"
+                      type="text"
+                      value={formData.name}
+                      onChange={handleChange}
+                      placeholder="Entrez le nom du compte"
+                      required
+                      className="h-11 w-full rounded-lg border border-[#dfe5db] bg-white pl-10 pr-3 text-sm text-[#172033] outline-none transition placeholder:text-[#a0a9b5] focus:border-[#71894d] focus:ring-4 focus:ring-[#556B2F]/10"
+                    />
+                  </div>
+                </div>
+
+                {/* ADRESSE */}
+
+                <div>
+                  <label
+                    htmlFor="adresse"
+                    className="mb-2 block text-sm font-semibold text-[#334155]"
+                  >
+                    Adresse
+                    <span className="ml-1 text-red-500">*</span>
+                  </label>
+
+                  <div className="relative">
+                    <MapPin className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-[#94a3b8]" />
+
+                    <input
+                      id="adresse"
+                      name="adresse"
+                      type="text"
+                      value={formData.adresse}
+                      onChange={handleChange}
+                      placeholder="Entrez l'adresse"
+                      required
+                      className="h-11 w-full rounded-lg border border-[#dfe5db] bg-white pl-10 pr-3 text-sm text-[#172033] outline-none transition placeholder:text-[#a0a9b5] focus:border-[#71894d] focus:ring-4 focus:ring-[#556B2F]/10"
+                    />
+                  </div>
+                </div>
+
+                {/* TÉLÉPHONE */}
+
+                <div>
+                  <label
+                    htmlFor="mobile"
+                    className="mb-2 block text-sm font-semibold text-[#334155]"
+                  >
+                    Téléphone
+                    <span className="ml-1 text-red-500">*</span>
+                  </label>
+
+                  <div className="relative">
+                    <Phone className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-[#94a3b8]" />
+
+                    <input
+                      id="mobile"
+                      name="mobile"
+                      type="tel"
+                      value={formData.mobile}
+                      onChange={handleChange}
+                      placeholder="Ex. : 22123456"
+                      required
+                      className="h-11 w-full rounded-lg border border-[#dfe5db] bg-white pl-10 pr-3 text-sm text-[#172033] outline-none transition placeholder:text-[#a0a9b5] focus:border-[#71894d] focus:ring-4 focus:ring-[#556B2F]/10"
+                    />
+                  </div>
+                </div>
+
+                {/* E-MAIL */}
+
+                <div>
+                  <label
+                    htmlFor="mail"
+                    className="mb-2 block text-sm font-semibold text-[#334155]"
+                  >
+                    Adresse e-mail
+                    <span className="ml-1 text-red-500">*</span>
+                  </label>
+
+                  <div className="relative">
+                    <Mail className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-[#94a3b8]" />
+
+                    <input
+                      id="mail"
+                      name="mail"
+                      type="email"
+                      value={formData.mail}
+                      onChange={handleChange}
+                      placeholder="exemple@email.com"
+                      required
+                      className="h-11 w-full rounded-lg border border-[#dfe5db] bg-white pl-10 pr-3 text-sm text-[#172033] outline-none transition placeholder:text-[#a0a9b5] focus:border-[#71894d] focus:ring-4 focus:ring-[#556B2F]/10"
+                    />
+                  </div>
+                </div>
+
+                {/* STATUT */}
+
+                <div>
+                  <label
+                    htmlFor="statusId"
+                    className="mb-2 block text-sm font-semibold text-[#334155]"
+                  >
+                    Statut du compte
+                    <span className="ml-1 text-red-500">*</span>
+                  </label>
+
+                  <div className="relative">
+                    <ShieldCheck className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-[#94a3b8]" />
+
+                    <select
+                      id="statusId"
+                      name="statusId"
+                      value={formData.statusId}
+                      onChange={handleChange}
+                      required
+                      className="h-11 w-full appearance-none rounded-lg border border-[#dfe5db] bg-white pl-10 pr-10 text-sm text-[#172033] outline-none transition focus:border-[#71894d] focus:ring-4 focus:ring-[#556B2F]/10"
+                    >
+                      <option value="1">Actif</option>
+                      <option value="2">Inactif</option>
+                    </select>
+
+                    <ChevronDown className="pointer-events-none absolute right-3.5 top-1/2 size-4 -translate-y-1/2 text-[#94a3b8]" />
+                  </div>
+                </div>
+
+                {/* PRIX DE CONVERSION */}
+
+                <div>
+                  <label
+                    htmlFor="priceConv"
+                    className="mb-2 block text-sm font-semibold text-[#334155]"
+                  >
+                    Prix de conversion
+                    <span className="ml-1 text-red-500">*</span>
+                  </label>
+
+                  <div className="relative">
+                    <BadgeDollarSign className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-[#94a3b8]" />
+
+                    <input
+                      id="priceConv"
+                      name="priceConv"
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={formData.priceConv}
+                      onChange={handleChange}
+                      placeholder="Ex. : 1.25"
+                      required
+                      className="h-11 w-full rounded-lg border border-[#dfe5db] bg-white pl-10 pr-12 text-sm text-[#172033] outline-none transition placeholder:text-[#a0a9b5] focus:border-[#71894d] focus:ring-4 focus:ring-[#556B2F]/10"
+                    />
+
+                    <span className="pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 text-xs font-semibold text-[#94a3b8]">
+                      DT
+                    </span>
+                  </div>
+                </div>
+
+                {/* COMPTE DE BASE */}
+
+                <div className="flex flex-col">
+                  <label className="mb-2 block text-sm font-semibold text-[#334155]">
+                    Compte de base
+                  </label>
+
+                  <label className="flex min-h-11 cursor-pointer items-center gap-3 rounded-lg border border-[#dfe5db] bg-white px-3.5 transition hover:border-[#c9d9b6]">
+                    <input
+                      type="checkbox"
+                      checked={formData.isBaseCompte}
+                      onChange={handleBaseCompteChange}
+                      className="size-4 accent-[#556B2F]"
+                    />
+
+                    <span className="text-sm text-[#334155]">
+                      Ce compte est un compte de base
+                    </span>
+                  </label>
+
+                  <p className="mt-2 text-xs leading-5 text-[#94a3b8]">
+                    Un compte de base n'est rattaché à aucun
+                    autre compte.
+                  </p>
+                </div>
+
+                {/* SÉLECTION DU COMPTE DE BASE */}
+
+                <div>
+                  <label
+                    htmlFor="baseCompteId"
+                    className="mb-2 block text-sm font-semibold text-[#334155]"
+                  >
+                    Compte de base associé
+                    {!formData.isBaseCompte && (
+                      <span className="ml-1 text-red-500">*</span>
+                    )}
+                  </label>
+
+                  <div className="relative">
+                    <select
+                      id="baseCompteId"
+                      name="baseCompteId"
+                      value={formData.baseCompteId}
+                      onChange={handleChange}
+                      disabled={formData.isBaseCompte}
+                      required={!formData.isBaseCompte}
+                      className="h-11 w-full appearance-none rounded-lg border border-[#dfe5db] bg-white px-3.5 pr-10 text-sm text-[#172033] outline-none transition focus:border-[#71894d] focus:ring-4 focus:ring-[#556B2F]/10 disabled:cursor-not-allowed disabled:bg-[#f5f6f4] disabled:text-[#a0a9b5]"
+                    >
+                      <option value="">
+                        {formData.isBaseCompte
+                          ? 'Non applicable'
+                          : 'Sélectionnez un compte de base'}
+                      </option>
+
+                      {comptesDeBase.map((compte) => (
+                        <option
+                          key={compte.compteId}
+                          value={String(compte.compteId)}
+                        >
+                          {compte.name} — ID {compte.compteId}
+                        </option>
+                      ))}
+                    </select>
+
+                    <ChevronDown className="pointer-events-none absolute right-3.5 top-1/2 size-4 -translate-y-1/2 text-[#94a3b8]" />
+                  </div>
+
+                  <p className="mt-2 text-xs leading-5 text-[#94a3b8]">
+                    Sélectionnez le compte auquel ce compte
+                    sera rattaché.
+                  </p>
+                </div>
+              </div>
+
+              {/* MESSAGE D'ERREUR */}
+
+              {errorMessage && (
+                <div
+                  role="alert"
+                  className="mt-6 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
+                >
+                  {errorMessage}
+                </div>
+              )}
+            </div>
+
+            {/* PIED DU FORMULAIRE */}
+
+            <div className="flex flex-col-reverse gap-3 border-t border-[#edf0eb] bg-[#fcfdfb] px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-8">
+              <p className="text-xs text-[#94a3b8]">
+                Vérifiez les informations avant de les enregistrer.
+              </p>
+
+              <div className="flex flex-col-reverse gap-3 sm:flex-row">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={handleCancel}
+                  className="h-11 border-[#dfe5db] bg-white px-5 text-sm text-[#475569] hover:bg-[#f5f8f1]"
+                >
+                  <X className="mr-2 size-4" />
+                  Annuler
+                </Button>
+
+                <Button
+                  type="submit"
+                  className="h-11 bg-[#556B2F] px-6 text-sm font-semibold text-white shadow-sm transition hover:bg-[#465A27]"
+                >
+                  <Save className="mr-2 size-4" />
+                  Enregistrer les modifications
+                </Button>
+              </div>
+            </div>
+          </form>
+        </div>
+      </Container>
+
+      {/* ========================================================
+          MODALE DE SUCCÈS
+      ======================================================== */}
+
+      {showSuccessModal && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-[#172033]/40 px-4 backdrop-blur-[2px]"
+          onClick={() => setShowSuccessModal(false)}
+        >
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="success-title"
+            className="w-full max-w-[400px] rounded-2xl border border-[#edf0eb] bg-white p-7 text-center shadow-2xl sm:p-8"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <button
+              type="button"
+              onClick={() => setShowSuccessModal(false)}
+              aria-label="Fermer"
+              className="absolute"
+            >
+              <X className="size-4" />
+            </button>
+
+            <div className="mx-auto flex size-14 items-center justify-center rounded-full bg-[#eef4e6]">
+              <Check className="size-7 text-[#556B2F]" />
+            </div>
+
+            <h2
+              id="success-title"
+              className="mt-4 text-xl font-bold text-[#172033]"
+            >
+              Modifications enregistrées
             </h2>
 
-            <p className="mt-2 text-sm text-gray-500">
-
-              Les informations du compte ont été
-              enregistrées.
-
+            <p className="mt-2 text-sm leading-6 text-[#64748b]">
+              Les informations du compte ont été préparées
+              avec succès.
             </p>
-
-
-            {/* ==================================================
-                BOUTON OK
-            ================================================== */}
 
             <Button
               type="button"
               onClick={handleSuccessOk}
-              className="mt-6 h-11 w-full bg-[#556B2F] hover:bg-[#465A27]"
+              className="mt-6 h-11 w-full bg-[#556B2F] font-semibold text-white hover:bg-[#465A27]"
             >
-
-              OK
-
+              Retour aux comptes
             </Button>
-
           </div>
-
         </div>
-
       )}
-
-    </div>
+    </>
   );
 }
+
+export default ModifierComptePage;
+

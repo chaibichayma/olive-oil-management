@@ -23,12 +23,12 @@ export function OrderReceipt() {
           >
             <div className="flex flex-col items-center gap-3 mb-5 lg:mb-9">
               <Link to="#" className="dark:hidden">
-                <img
-                  src={toAbsoluteUrl('/media/app/default-logo.svg')}
-                  className="default-logo h-[22px]"
-                  alt="image"
-                />
-              </Link>
+  <img
+    src={toAbsoluteUrl('/media/app/logo_z.png')}
+    className="default-logo h-[140px] w-[220px] max-w-none object-contain"
+    alt="Logo"
+  />
+</Link>
 
               <Link to="#" className="hidden dark:block">
                 <img

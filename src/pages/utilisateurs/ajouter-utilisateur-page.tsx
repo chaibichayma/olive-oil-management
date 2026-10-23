@@ -1,27 +1,38 @@
+
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import {
+  ArrowLeft,
+  Check,
+  CheckCircle2,
+  ChevronRight,
   Eye,
   EyeOff,
-  Mail,
-  User,
   Hash,
   Lock,
-  Save,
-  Check,
+  Mail,
+  ShieldCheck,
+  User,
+  UserRound,
   X,
 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Container } from '@/components/common/container';
 
+interface Utilisateur {
+  id: number;
+  displayName: string;
+  userName: string;
+  mail: string;
+  password: string;
+  userCode: string;
+  isActive: boolean;
+}
+
 export function AjouterUtilisateurPage() {
   const navigate = useNavigate();
-
-  /* ============================================================
-     FORMULAIRE
-  ============================================================ */
 
   const [formData, setFormData] = useState({
     displayName: '',
@@ -33,17 +44,8 @@ export function AjouterUtilisateurPage() {
   });
 
   const [showPassword, setShowPassword] = useState(false);
-
-  /* ============================================================
-     MODALE SUCCÈS
-  ============================================================ */
-
-  const [showSuccessModal, setShowSuccessModal] =
-    useState(false);
-
-  /* ============================================================
-     MODIFICATION DES CHAMPS
-  ============================================================ */
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
 
   const handleChange = (
     event: React.ChangeEvent<HTMLInputElement>,
@@ -54,11 +56,9 @@ export function AjouterUtilisateurPage() {
       ...current,
       [name]: value,
     }));
-  };
 
-  /* ============================================================
-     STATUT
-  ============================================================ */
+    setErrorMessage('');
+  };
 
   const handleToggleStatus = () => {
     setFormData((current) => ({
@@ -67,519 +67,423 @@ export function AjouterUtilisateurPage() {
     }));
   };
 
-  /* ============================================================
-     ANNULER
-  ============================================================ */
-
   const handleCancel = () => {
     navigate('/store-admin/users');
   };
-
-  /* ============================================================
-     ENREGISTRER
-  ============================================================ */
 
   const handleSubmit = (
     event: React.FormEvent<HTMLFormElement>,
   ) => {
     event.preventDefault();
 
-    console.log(
-      'Nouvel utilisateur :',
-      formData,
+    if (
+      !formData.displayName.trim() ||
+      !formData.userName.trim() ||
+      !formData.mail.trim() ||
+      !formData.password ||
+      !formData.userCode.trim()
+    ) {
+      setErrorMessage('Veuillez remplir tous les champs obligatoires.');
+      return;
+    }
+
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.mail)) {
+      setErrorMessage('Veuillez saisir une adresse e-mail valide.');
+      return;
+    }
+
+    // Démonstration locale uniquement.
+    const utilisateurs: Utilisateur[] = JSON.parse(
+      localStorage.getItem('utilisateurs') || '[]',
     );
 
-    /*
-      Plus tard :
-      appel API / Supabase ici
-    */
+    const usernameExists = utilisateurs.some(
+      (user) =>
+        user.userName.toLowerCase() ===
+        formData.userName.trim().toLowerCase(),
+    );
+
+    const emailExists = utilisateurs.some(
+      (user) =>
+        user.mail.toLowerCase() === formData.mail.trim().toLowerCase(),
+    );
+
+    const codeExists = utilisateurs.some(
+      (user) =>
+        user.userCode.toLowerCase() ===
+        formData.userCode.trim().toLowerCase(),
+    );
+
+    if (usernameExists || emailExists || codeExists) {
+      setErrorMessage(
+        "Le nom d'utilisateur, l'e-mail ou le code existe déjà.",
+      );
+      return;
+    }
+
+    const newUser: Utilisateur = {
+      id: Date.now(),
+      displayName: formData.displayName.trim(),
+      userName: formData.userName.trim(),
+      mail: formData.mail.trim(),
+      password: formData.password,
+      userCode: formData.userCode.trim(),
+      isActive: formData.isActive,
+    };
+
+    utilisateurs.push(newUser);
+    localStorage.setItem('utilisateurs', JSON.stringify(utilisateurs));
 
     setShowSuccessModal(true);
   };
 
-  /* ============================================================
-     FERMER MODALE SUCCÈS
-  ============================================================ */
-
-  const handleCloseSuccess = () => {
-    setShowSuccessModal(false);
-  };
-
-  /* ============================================================
-     BOUTON OK
-  ============================================================ */
-
   const handleSuccessOk = () => {
     setShowSuccessModal(false);
-
     navigate('/store-admin/users');
   };
 
-  /* ============================================================
-     RENDER
-  ============================================================ */
+  const inputClassName =
+    'h-11 w-full rounded-lg border border-slate-200 bg-white pl-10 pr-3 text-sm text-slate-800 outline-none transition placeholder:text-slate-400 hover:border-slate-300 focus:border-[#556B2F] focus:ring-2 focus:ring-[#556B2F]/10';
+
+  const labelClassName =
+    'mb-2 block text-sm font-semibold text-slate-700';
 
   return (
     <>
-      {/* ========================================================
-          HEADER DE PAGE
-      ======================================================== */}
-
       <Container>
-        <div className="py-5">
-
-          <h1 className="text-2xl font-bold text-foreground">
-            Ajouter un utilisateur
-          </h1>
-
-          <div className="mt-2 flex items-center gap-2 text-sm text-muted-foreground">
-
-           
-
-            <span>
-              Paramétrage
-            </span>
-
-            <span>
-              /
-            </span>
-
-            <span>
-              Utilisateurs
-            </span>
-
-
-          </div>
-
-        </div>
-      </Container>
-
-
-      {/* ========================================================
-          FORMULAIRE
-      ======================================================== */}
-
-      <Container>
-
-        <form onSubmit={handleSubmit}>
-
-          <div className="rounded-xl border border-border bg-white shadow-sm">
-
-            {/* ==================================================
-                HEADER CARD
-            ================================================== */}
-
-            <div className="border-b border-border px-6 py-5">
-
-              <h2 className="text-lg font-bold text-foreground">
-                Informations utilisateur
-              </h2>
-
-              <p className="mt-1 text-sm text-muted-foreground">
-                Veuillez remplir les informations de l'utilisateur.
-              </p>
-
-            </div>
-
-
-            {/* ==================================================
-                CHAMPS
-            ================================================== */}
-
-            <div className="px-6 py-6">
-
-              <div className="grid grid-cols-1 gap-x-6 gap-y-5 md:grid-cols-2">
-
-                {/* ==================================================
-                    NOM D'AFFICHAGE
-                ================================================== */}
-
-                <div>
-
-                  <label
-                    htmlFor="displayName"
-                    className="mb-2 block text-sm font-medium text-foreground"
-                  >
-                    Nom d'affichage
-                    <span className="ml-1 text-red-500">
-                      *
-                    </span>
-                  </label>
-
-                  <div className="relative">
-
-                    <User className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-
-                    <input
-                      id="displayName"
-                      name="displayName"
-                      type="text"
-                      value={formData.displayName}
-                      onChange={handleChange}
-                      placeholder="Entrez le nom d'affichage"
-                      required
-                      className="h-11 w-full rounded-md border border-input bg-background pl-10 pr-3 text-sm outline-none transition focus:border-[#556B2F] focus:ring-1 focus:ring-[#556B2F]"
-                    />
-
-                  </div>
-
-                </div>
-
-
-                {/* ==================================================
-                    NOM UTILISATEUR
-                ================================================== */}
-
-                <div>
-
-                  <label
-                    htmlFor="userName"
-                    className="mb-2 block text-sm font-medium text-foreground"
-                  >
-                    Nom utilisateur
-                    <span className="ml-1 text-red-500">
-                      *
-                    </span>
-                  </label>
-
-                  <div className="relative">
-
-                    <User className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-
-                    <input
-                      id="userName"
-                      name="userName"
-                      type="text"
-                      value={formData.userName}
-                      onChange={handleChange}
-                      placeholder="Entrez le nom utilisateur"
-                      required
-                      className="h-11 w-full rounded-md border border-input bg-background pl-10 pr-3 text-sm outline-none transition focus:border-[#556B2F] focus:ring-1 focus:ring-[#556B2F]"
-                    />
-
-                  </div>
-
-                </div>
-
-
-                {/* ==================================================
-                    EMAIL
-                ================================================== */}
-
-                <div>
-
-                  <label
-                    htmlFor="mail"
-                    className="mb-2 block text-sm font-medium text-foreground"
-                  >
-                    Email
-                    <span className="ml-1 text-red-500">
-                      *
-                    </span>
-                  </label>
-
-                  <div className="relative">
-
-                    <Mail className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-
-                    <input
-                      id="mail"
-                      name="mail"
-                      type="email"
-                      value={formData.mail}
-                      onChange={handleChange}
-                      placeholder="Entrez l'adresse email"
-                      required
-                      className="h-11 w-full rounded-md border border-input bg-background pl-10 pr-3 text-sm outline-none transition focus:border-[#556B2F] focus:ring-1 focus:ring-[#556B2F]"
-                    />
-
-                  </div>
-
-                </div>
-
-
-                {/* ==================================================
-                    CODE UTILISATEUR
-                ================================================== */}
-
-                <div>
-
-                  <label
-                    htmlFor="userCode"
-                    className="mb-2 block text-sm font-medium text-foreground"
-                  >
-                    Code utilisateur
-                    <span className="ml-1 text-red-500">
-                      *
-                    </span>
-                  </label>
-
-                  <div className="relative">
-
-                    <Hash className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-
-                    <input
-                      id="userCode"
-                      name="userCode"
-                      type="text"
-                      value={formData.userCode}
-                      onChange={handleChange}
-                      placeholder="Entrez le code utilisateur"
-                      required
-                      className="h-11 w-full rounded-md border border-input bg-background pl-10 pr-3 text-sm outline-none transition focus:border-[#556B2F] focus:ring-1 focus:ring-[#556B2F]"
-                    />
-
-                  </div>
-
-                </div>
-
-
-                {/* ==================================================
-                    MOT DE PASSE
-                ================================================== */}
-
-                <div className="md:col-span-2">
-
-                  <label
-                    htmlFor="password"
-                    className="mb-2 block text-sm font-medium text-foreground"
-                  >
-                    Mot de passe
-                    <span className="ml-1 text-red-500">
-                      *
-                    </span>
-                  </label>
-
-                  <div className="relative">
-
-                    <Lock className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-
-                    <input
-                      id="password"
-                      name="password"
-                      type={
-                        showPassword
-                          ? 'text'
-                          : 'password'
-                      }
-                      value={formData.password}
-                      onChange={handleChange}
-                      placeholder="Entrez le mot de passe"
-                      required
-                      className="h-11 w-full rounded-md border border-input bg-background pl-10 pr-11 text-sm outline-none transition focus:border-[#556B2F] focus:ring-1 focus:ring-[#556B2F]"
-                    />
-
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setShowPassword(
-                          (current) => !current,
-                        )
-                      }
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground transition hover:text-foreground"
-                      aria-label={
-                        showPassword
-                          ? 'Masquer le mot de passe'
-                          : 'Afficher le mot de passe'
-                      }
-                    >
-                      {showPassword ? (
-                        <EyeOff className="size-4" />
-                      ) : (
-                        <Eye className="size-4" />
-                      )}
-                    </button>
-
-                  </div>
-
-                </div>
-
-
-                {/* ==================================================
-                    STATUT
-                ================================================== */}
-
-                <div className="md:col-span-2">
-
-                  <label className="mb-2 block text-sm font-medium text-foreground">
-                    Statut
-                    <span className="ml-1 text-red-500">
-                      *
-                    </span>
-                  </label>
-
-                  <button
-                    type="button"
-                    onClick={handleToggleStatus}
-                    className="flex items-center gap-3"
-                  >
-
-                    <span
-                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                        formData.isActive
-                          ? 'bg-[#556B2F]'
-                          : 'bg-gray-300'
-                      }`}
-                    >
-
-                      <span
-                        className={`inline-block size-5 rounded-full bg-white shadow-sm transition-transform ${
-                          formData.isActive
-                            ? 'translate-x-5'
-                            : 'translate-x-0.5'
-                        }`}
-                      />
-
-                    </span>
-
-                    <span className="text-sm font-medium text-foreground">
-                      {formData.isActive
-                        ? 'Actif'
-                        : 'Inactif'}
-                    </span>
-
-                  </button>
-
-                </div>
-
+        {/* HEADER PROFESSIONNEL */}
+        <div className="pb-6 pt-5 sm:pb-8 sm:pt-7">
+          {/* FIL D'ARIANE */}
+          
+
+          {/* TITRE + ACTION */}
+          <div className="flex flex-col justify-between gap-5 border-b border-slate-200 pb-6 sm:flex-row sm:items-center">
+            <div className="flex min-w-0 items-start gap-4">
+              <div className="flex size-12 shrink-0 items-center justify-center rounded-xl border border-[#e0e8d5] bg-[#f2f6ed]">
+                <UserRound className="size-6 text-[#556B2F]" />
               </div>
 
+              <div className="min-w-0">
+                <div className="mb-1.5 flex flex-wrap items-center gap-2">
+                  <h1 className="text-2xl font-bold tracking-tight text-slate-900 sm:text-[28px]">
+                    Ajouter un utilisateur
+                  </h1>
+                  <span className="rounded-md border border-[#dce7d0] bg-[#f5f8f1] px-2 py-1 text-[10px] font-semibold uppercase tracking-wide text-[#556B2F]">
+                    Nouveau compte
+                  </span>
+                </div>
+
+                <p className="max-w-xl text-sm leading-6 text-slate-500">
+                  Créez un compte utilisateur et configurez ses informations
+                  de connexion et son statut.
+                </p>
+              </div>
             </div>
 
+            <Button
+  type="button"
+  variant="outline"
+  onClick={handleCancel}
+  className="h-10 shrink-0 gap-2 self-start rounded-lg border border-[#DCE8CF] bg-[#F4F8EF] px-4 text-sm font-medium text-[#556B2F] shadow-sm transition-colors hover:border-[#C7D9B3] hover:bg-[#EAF2E0] hover:text-[#435B2B] sm:self-center"
+>
+  <ArrowLeft className="size-4 text-[#718747]" />
+  Retour à la liste
+</Button>
+          </div>
+        </div>
 
-            {/* ==================================================
-                FOOTER
-            ================================================== */}
+        {/* FORMULAIRE */}
+        <form onSubmit={handleSubmit} className="pb-8">
+          <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+            {/* EN-TÊTE DU FORMULAIRE */}
+            <div className="flex items-center gap-3 border-b border-slate-100 px-5 py-5 sm:px-7">
+              <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-[#f2f6ed]">
+                <UserRound className="size-5 text-[#556B2F]" />
+              </div>
 
-            <div className="flex items-center justify-end gap-3 border-t border-border px-6 py-4">
+              <div>
+                <h2 className="text-base font-bold text-slate-900">
+                  Informations du compte
+                </h2>
+                <p className="mt-1 text-xs text-slate-500">
+                  Complétez les informations ci-dessous pour créer le compte.
+                </p>
+              </div>
+            </div>
 
-              {/* ANNULER */}
+            <div className="space-y-7 p-5 sm:p-7">
+              {/* IDENTITÉ */}
+              <section>
+                <div className="mb-5 flex items-center gap-2">
+                  <User className="size-4 text-[#556B2F]" />
+                  <h3 className="text-sm font-bold text-slate-800">
+                    Identité
+                  </h3>
+                </div>
 
+                <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
+                  <div>
+                    <label htmlFor="displayName" className={labelClassName}>
+                      Nom complet <span className="text-red-500">*</span>
+                    </label>
+                    <div className="relative">
+                      <User className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-400" />
+                      <input
+                        id="displayName"
+                        name="displayName"
+                        value={formData.displayName}
+                        onChange={handleChange}
+                        placeholder="Ex. Ayah Ben Ali"
+                        autoComplete="name"
+                        required
+                        className={inputClassName}
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label htmlFor="userName" className={labelClassName}>
+                      Nom d'utilisateur <span className="text-red-500">*</span>
+                    </label>
+                    <div className="relative">
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-semibold text-slate-400">
+                        @
+                      </span>
+                      <input
+                        id="userName"
+                        name="userName"
+                        value={formData.userName}
+                        onChange={handleChange}
+                        placeholder="Ex. ayah"
+                        autoComplete="username"
+                        required
+                        className={inputClassName}
+                      />
+                    </div>
+                  </div>
+                </div>
+              </section>
+
+              <div className="border-t border-slate-100" />
+
+              {/* COORDONNÉES */}
+              <section>
+                <div className="mb-5 flex items-center gap-2">
+                  <Mail className="size-4 text-[#556B2F]" />
+                  <h3 className="text-sm font-bold text-slate-800">
+                    Coordonnées
+                  </h3>
+                </div>
+
+                <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
+                  <div>
+                    <label htmlFor="mail" className={labelClassName}>
+                      Adresse e-mail <span className="text-red-500">*</span>
+                    </label>
+                    <div className="relative">
+                      <Mail className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-400" />
+                      <input
+                        id="mail"
+                        name="mail"
+                        type="email"
+                        value={formData.mail}
+                        onChange={handleChange}
+                        placeholder="nom@exemple.com"
+                        autoComplete="email"
+                        required
+                        className={inputClassName}
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label htmlFor="userCode" className={labelClassName}>
+                      Code utilisateur <span className="text-red-500">*</span>
+                    </label>
+                    <div className="relative">
+                      <Hash className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-400" />
+                      <input
+                        id="userCode"
+                        name="userCode"
+                        value={formData.userCode}
+                        onChange={handleChange}
+                        placeholder="Ex. U013"
+                        required
+                        className={inputClassName}
+                      />
+                    </div>
+                  </div>
+                </div>
+              </section>
+
+              <div className="border-t border-slate-100" />
+
+              {/* SÉCURITÉ ET STATUT */}
+              <section>
+                <div className="mb-5 flex items-center gap-2">
+                  <ShieldCheck className="size-4 text-[#556B2F]" />
+                  <h3 className="text-sm font-bold text-slate-800">
+                    Sécurité et statut
+                  </h3>
+                </div>
+
+                <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
+                  <div>
+                    <label htmlFor="password" className={labelClassName}>
+                      Mot de passe <span className="text-red-500">*</span>
+                    </label>
+                    <div className="relative">
+                      <Lock className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-400" />
+                      <input
+                        id="password"
+                        name="password"
+                        type={showPassword ? 'text' : 'password'}
+                        value={formData.password}
+                        onChange={handleChange}
+                        placeholder="Saisissez un mot de passe"
+                        autoComplete="new-password"
+                        required
+                        className={`${inputClassName} pr-11`}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword((value) => !value)}
+                        aria-label={
+                          showPassword
+                            ? 'Masquer le mot de passe'
+                            : 'Afficher le mot de passe'
+                        }
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 transition hover:text-[#556B2F]"
+                      >
+                        {showPassword ? (
+                          <EyeOff className="size-4" />
+                        ) : (
+                          <Eye className="size-4" />
+                        )}
+                      </button>
+                    </div>
+                    <p className="mt-2 text-xs text-slate-400">
+                      Choisissez un mot de passe sécurisé.
+                    </p>
+                  </div>
+
+                  <div>
+                    <label className={labelClassName}>
+                      Statut du compte
+                    </label>
+                    <button
+                      type="button"
+                      role="switch"
+                      aria-checked={formData.isActive}
+                      onClick={handleToggleStatus}
+                      className="flex h-11 w-full items-center justify-between rounded-lg border border-slate-200 px-3 transition hover:border-[#c9d9b6]"
+                    >
+                      <span className="flex items-center gap-2.5">
+                        <span
+                          className={`size-2.5 rounded-full ${
+                            formData.isActive
+                              ? 'bg-emerald-500'
+                              : 'bg-slate-400'
+                          }`}
+                        />
+                        <span className="text-sm font-medium text-slate-700">
+                          {formData.isActive ? 'Compte actif' : 'Compte inactif'}
+                        </span>
+                      </span>
+
+                      <span
+                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition ${
+                          formData.isActive ? 'bg-[#556B2F]' : 'bg-slate-300'
+                        }`}
+                      >
+                        <span
+                          className={`size-5 rounded-full bg-white shadow-sm transition-transform ${
+                            formData.isActive ? 'translate-x-5' : 'translate-x-0.5'
+                          }`}
+                        />
+                      </span>
+                    </button>
+                    <p className="mt-2 text-xs text-slate-400">
+                      {formData.isActive
+                        ? "L'utilisateur pourra accéder à son compte."
+                        : "L'accès au compte sera désactivé."}
+                    </p>
+                  </div>
+                </div>
+              </section>
+
+              {errorMessage && (
+                <div
+                  role="alert"
+                  className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
+                >
+                  {errorMessage}
+                </div>
+              )}
+            </div>
+
+            {/* BOUTONS */}
+            <div className="flex flex-col-reverse gap-3 border-t border-slate-100 bg-slate-50/70 px-5 py-4 sm:flex-row sm:justify-end sm:px-7">
               <Button
                 type="button"
                 variant="outline"
                 onClick={handleCancel}
-                className="h-10 min-w-[100px]"
+                className="h-10 gap-2 border-slate-200 bg-white px-5"
               >
+                <X className="size-4" />
                 Annuler
               </Button>
 
-
-              {/* ENREGISTRER */}
-
               <Button
                 type="submit"
-                className="h-10 min-w-[125px] bg-[#556B2F] hover:bg-[#465A27]"
+                className="h-10 gap-2 bg-[#556B2F] px-5 text-white hover:bg-[#465A27]"
               >
-
-                <Save className="size-4" />
-
-                Enregistrer
-
+                <Check className="size-4" />
+                Enregistrer l'utilisateur
               </Button>
-
             </div>
-
           </div>
-
         </form>
-
       </Container>
 
-
-      {/* ========================================================
-          MODALE SUCCÈS
-      ======================================================== */}
-
+      {/* MODALE DE SUCCÈS */}
       {showSuccessModal && (
-
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 px-4"
-          onClick={handleCloseSuccess}
+          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 px-4 backdrop-blur-[2px]"
+          onClick={() => setShowSuccessModal(false)}
         >
-
-          {/* ==================================================
-              CONTENU MODALE
-          ================================================== */}
-
           <div
-            className="relative w-full max-w-[380px] rounded-lg bg-white px-7 py-5 text-center shadow-2xl"
-            onClick={(event) =>
-              event.stopPropagation()
-            }
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="success-title"
+            className="w-full max-w-sm rounded-2xl border border-slate-100 bg-white p-7 text-center shadow-2xl"
+            onClick={(event) => event.stopPropagation()}
           >
-
-            {/* ==================================================
-                FERMER
-            ================================================== */}
-
-            <button
-              type="button"
-              onClick={handleCloseSuccess}
-              className="absolute right-3 top-3 text-gray-400 transition hover:text-gray-700"
-              aria-label="Fermer"
-            >
-
-              <X className="size-4" />
-
-            </button>
-
-
-            {/* ==================================================
-                ICÔNE SUCCÈS
-            ================================================== */}
-
-            <div className="flex justify-center">
-
-              <div className="flex size-12 items-center justify-center rounded-full bg-green-50">
-
-                <Check className="size-6 text-[#556B2F]" />
-
-              </div>
-
+            <div className="mx-auto flex size-14 items-center justify-center rounded-full bg-[#eef4e6]">
+              <CheckCircle2 className="size-7 text-[#556B2F]" />
             </div>
 
-
-            {/* ==================================================
-                TITRE
-            ================================================== */}
-
-            <h2 className="mt-3 text-sm font-bold text-gray-900">
+            <h2
+              id="success-title"
+              className="mt-4 text-lg font-bold text-slate-900"
+            >
               Utilisateur ajouté
             </h2>
 
-
-            {/* ==================================================
-                MESSAGE
-            ================================================== */}
-
-            <p className="mt-2 text-xs text-gray-500">
-              L'utilisateur a été ajouté avec succès.
+            <p className="mt-2 text-sm leading-6 text-slate-500">
+              Le compte a été enregistré avec succès.
             </p>
 
-
-            {/* ==================================================
-                BOUTON OK
-            ================================================== */}
-
-            <div className="mt-4 flex justify-center">
-
-              <Button
-                type="button"
-                onClick={handleSuccessOk}
-                className="h-9 min-w-[70px] bg-[#556B2F] text-xs text-white hover:bg-[#465A27]"
-              >
-                OK
-              </Button>
-
-            </div>
-
+            <Button
+              type="button"
+              onClick={handleSuccessOk}
+              className="mt-5 h-10 w-full bg-[#556B2F] hover:bg-[#465A27]"
+            >
+              Continuer
+            </Button>
           </div>
-
         </div>
-
       )}
-
     </>
   );
 }

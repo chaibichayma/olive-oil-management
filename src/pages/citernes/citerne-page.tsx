@@ -1,13 +1,14 @@
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   ChevronRight,
   Database,
   Plus,
+  RefreshCw,
   Trash2,
   X,
 } from "lucide-react";
-import { useNavigate } from "react-router-dom";
 
 import { Button } from "@/components/ui/button";
 import { Container } from "@/components/common/container";
@@ -17,11 +18,16 @@ const API_URL = "/olive_app/citerne/getListBean";
 
 type ApiObject = Record<string, unknown>;
 
+type CiterneWithVolume = Citerne & {
+  currentVolume?: number;
+  fillPercentage?: number;
+};
+
 function extractList(data: unknown): ApiObject[] {
   if (Array.isArray(data)) {
     return data.filter(
       (item): item is ApiObject =>
-        typeof item === "object" && item !== null
+        typeof item === "object" && item !== null,
     );
   }
 
@@ -44,7 +50,7 @@ function extractList(data: unknown): ApiObject[] {
     if (Array.isArray(value)) {
       return value.filter(
         (item): item is ApiObject =>
-          typeof item === "object" && item !== null
+          typeof item === "object" && item !== null,
       );
     }
   }
@@ -54,7 +60,7 @@ function extractList(data: unknown): ApiObject[] {
 
 function readValue(
   obj: ApiObject,
-  keys: string[]
+  keys: string[],
 ): unknown {
   for (const key of keys) {
     if (obj[key] !== undefined && obj[key] !== null) {
@@ -87,7 +93,7 @@ function formatDate(value: unknown): string {
     const [year, month, day] = value;
 
     return `${String(day).padStart(2, "0")}/${String(
-      month
+      month,
     ).padStart(2, "0")}/${year}`;
   }
 
@@ -107,8 +113,8 @@ function formatDate(value: unknown): string {
 }
 
 function normalizeCiterne(
-  item: ApiObject
-): Citerne | null {
+  item: ApiObject,
+): CiterneWithVolume | null {
   const rawId = readValue(item, [
     "citerneId",
     "id",
@@ -117,14 +123,12 @@ function normalizeCiterne(
   ]);
 
   if (rawId === undefined || rawId === "") {
-    console.warn("Identifiant absent pour cette citerne :", item);
     return null;
   }
 
   const citerneId = toNumber(rawId);
 
   if (citerneId <= 0) {
-    console.warn("Identifiant invalide pour cette citerne :", item);
     return null;
   }
 
@@ -160,38 +164,73 @@ function normalizeCiterne(
     "date",
   ]);
 
+  const rawCurrentVolume = readValue(item, [
+    "volumeActuel",
+    "volumeCourant",
+    "volumeStocke",
+    "volumeUtilise",
+    "quantiteActuelle",
+    "quantiteHuile",
+    "currentVolume",
+  ]);
+
+  const rawFillPercentage = readValue(item, [
+    "pourcentageRemplissage",
+    "tauxRemplissage",
+    "niveauRemplissage",
+    "fillPercentage",
+  ]);
+
+  const parsedCapacity = Math.max(0, toNumber(capacity));
+
+  const parsedVolume =
+    rawCurrentVolume !== undefined
+      ? Math.max(0, toNumber(rawCurrentVolume))
+      : undefined;
+
+  const parsedPercentage =
+    rawFillPercentage !== undefined
+      ? Math.min(100, Math.max(0, toNumber(rawFillPercentage)))
+      : undefined;
+
   return {
     citerneId,
     reference: String(reference ?? ""),
     libelle: String(libelle ?? ""),
-    capacity: toNumber(capacity),
+    capacity: parsedCapacity,
     dateFabrication: formatDate(dateFabrication),
+    currentVolume: parsedVolume,
+    fillPercentage: parsedPercentage,
   };
+}
+
+function formatLiters(value: number): string {
+  return `${value.toLocaleString("fr-FR", {
+    maximumFractionDigits: 2,
+  })} L`;
 }
 
 export function CiternePage() {
   const navigate = useNavigate();
 
-  const [citernes, setCiternes] = useState<Citerne[]>([]);
+  const [citernes, setCiternes] = useState<CiterneWithVolume[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [citerneToDelete, setCiterneToDelete] =
-    useState<Citerne | null>(null);
+    useState<CiterneWithVolume | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const loadCiternes = useCallback(async () => {
     setLoading(true);
     setError("");
 
     try {
-      const response = await fetch(
-        `${API_URL}?searche=`,
-        {
-          method: "GET",
-          headers: {
-            Accept: "application/json",
-          },
-        }
-      );
+      const response = await fetch(`${API_URL}?searche=`, {
+        method: "GET",
+        headers: {
+          Accept: "application/json",
+        },
+      });
 
       if (!response.ok) {
         const details = await response.text();
@@ -199,34 +238,29 @@ export function CiternePage() {
         throw new Error(
           `Erreur HTTP ${response.status}${
             details ? ` : ${details}` : ""
-          }`
+          }`,
         );
       }
 
       const data: unknown = await response.json();
-
-      console.log("Réponse GET citernes :", data);
-
       const records = extractList(data);
+
       const normalized = records
         .map(normalizeCiterne)
-        .filter((item): item is Citerne => item !== null);
+        .filter(
+          (item): item is CiterneWithVolume => item !== null,
+        );
 
       setCiternes(normalized);
-
-      if (records.length === 0) {
-        console.warn(
-          "Aucune liste de citernes reconnue dans la réponse."
-        );
-      }
     } catch (err) {
       console.error("Erreur lors du chargement des citernes :", err);
 
       setCiternes([]);
+
       setError(
         err instanceof Error
           ? err.message
-          : "Impossible de récupérer les citernes."
+          : "Impossible de récupérer les citernes.",
       );
     } finally {
       setLoading(false);
@@ -237,115 +271,235 @@ export function CiternePage() {
     void loadCiternes();
   }, [loadCiternes]);
 
+  const statistics = useMemo(() => {
+    const totalCapacity = citernes.reduce(
+      (sum, citerne) => sum + Math.max(0, citerne.capacity),
+      0,
+    );
+
+    const hasAllVolumeData = citernes.every(
+      (citerne) =>
+        citerne.currentVolume !== undefined ||
+        citerne.fillPercentage !== undefined,
+    );
+
+    const usedCapacity = hasAllVolumeData
+      ? citernes.reduce((sum, citerne) => {
+          const volume =
+            citerne.currentVolume ??
+            (citerne.capacity * (citerne.fillPercentage ?? 0)) / 100;
+
+          return (
+            sum +
+            Math.min(
+              Math.max(0, citerne.capacity),
+              Math.max(0, volume),
+            )
+          );
+        }, 0)
+      : null;
+
+    const availableCapacity =
+      usedCapacity === null
+        ? null
+        : Math.max(0, totalCapacity - usedCapacity);
+
+    const usagePercentage =
+      usedCapacity === null || totalCapacity <= 0
+        ? 0
+        : Math.min(
+            100,
+            Math.round((usedCapacity / totalCapacity) * 100),
+          );
+
+    return {
+      totalCapacity,
+      usedCapacity,
+      availableCapacity,
+      usagePercentage,
+    };
+  }, [citernes]);
+
   const handleAdd = () => {
     navigate("/store-admin/tanks/add");
   };
 
   const handleEdit = (citerne: Citerne) => {
-    navigate(
-      `/store-admin/tanks/edit/${citerne.citerneId}`
-    );
+    navigate(`/store-admin/tanks/edit/${citerne.citerneId}`);
   };
 
   const handleDelete = (citerne: Citerne) => {
-    setCiterneToDelete(citerne);
+    setCiterneToDelete(citerne as CiterneWithVolume);
   };
 
   const handleCancelDelete = () => {
+    if (isDeleting) return;
     setCiterneToDelete(null);
   };
 
-  
-const handleConfirmDelete = async () => {
-  if (!citerneToDelete) return;
+  const handleConfirmDelete = async () => {
+    if (!citerneToDelete || isDeleting) return;
 
-  setError("");
+    setError("");
+    setIsDeleting(true);
 
-  try {
-    const id = citerneToDelete.citerneId;
-
-    const response = await fetch(
-      `/olive_app/citerne/delete/${id}`,
-      {
-        method: "POST",
-        headers: {
-          Accept: "*/*",
+    try {
+      const response = await fetch(
+        `/olive_app/citerne/delete/${citerneToDelete.citerneId}`,
+        {
+          method: "POST",
+          headers: {
+            Accept: "*/*",
+          },
         },
-      }
-    );
-
-    const message = await response.text();
-
-    if (!response.ok) {
-      throw new Error(
-        `Erreur HTTP ${response.status}${
-          message ? ` : ${message}` : ""
-        }`
       );
+
+      const message = await response.text();
+
+      if (!response.ok) {
+        throw new Error(
+          `Erreur HTTP ${response.status}${
+            message ? ` : ${message}` : ""
+          }`,
+        );
+      }
+
+      setCiterneToDelete(null);
+      await loadCiternes();
+    } catch (err) {
+      console.error("Erreur lors de la suppression :", err);
+
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Impossible de supprimer la citerne.",
+      );
+    } finally {
+      setIsDeleting(false);
     }
-
-    // Fermer la fenêtre de confirmation.
-    setCiterneToDelete(null);
-
-    // Actualiser la liste depuis le backend.
-    await loadCiternes();
-  } catch (err) {
-    console.error("Erreur lors de la suppression :", err);
-
-    setError(
-      err instanceof Error
-        ? err.message
-        : "Impossible de supprimer la citerne."
-    );
-  }
-};
-
+  };
 
   return (
     <>
       <Container>
-        <div className="py-5 lg:py-6">
-      
-<div className="mb-4 flex items-center gap-2 font-sans text-sm tracking-wide text-[#64748b]">
+        <div className="py-4 sm:py-5">
+          {/* Header conforme à la maquette */}
+          <header className="w-full">
+            {/* Fil d'Ariane */}
+            
 
-  <span className="font-medium transition-colors hover:text-[#556B2F]">
-    Paramétrage
-  </span>
-
-  <ChevronRight className="size-4 text-[#94a3b8]" />
-
-  <span className="font-semibold text-[#334155]">
-    Citernes
-  </span>
-
-</div>
-
-          <div className="flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
-            <div className="flex items-center gap-4">
-              <div className="flex size-14 shrink-0 items-center justify-center rounded-xl bg-[#eef4e6]">
-                <Database className="size-7 text-[#556B2F]" />
-              </div>
-
-              <div>
-                <h1 className="text-2xl font-bold tracking-tight text-[#172033]">
+            {/* Titre et action */}
+            <div className="flex items-start justify-between gap-4">
+              <div className="min-w-0">
+                <h1 className="text-[26px] font-bold leading-tight tracking-tight text-slate-900 sm:text-[28px]">
                   Citernes
                 </h1>
 
-                <p className="mt-0.5 text-sm text-muted-foreground">
-                  Gestion des citernes de stockage
+                <p className="mt-0.5 text-xs text-slate-500 sm:text-sm">
+                  Gestion des citernes de stockage d’huile d’olive
                 </p>
               </div>
+
+              <Button
+                type="button"
+                onClick={handleAdd}
+                className="h-9 shrink-0 rounded-md bg-[#556B2F] px-3 text-xs font-semibold text-white shadow-sm hover:bg-[#465A27] sm:px-4 sm:text-sm"
+              >
+                <Plus className="mr-1.5 size-4" />
+                Ajouter une citerne
+              </Button>
             </div>
 
-            <Button
-              type="button"
-              onClick={handleAdd}
-              className="h-11 rounded-lg bg-[#556B2F] px-5 font-semibold text-white shadow-sm transition-all hover:bg-[#465A27] hover:shadow-md"
+            {/* Indicateurs horizontaux de capacité */}
+            <section
+              aria-label="Capacité de stockage"
+              className="mt-3 grid grid-cols-1 items-center gap-4 rounded-lg border border-slate-200/80 bg-white px-4 py-4 shadow-sm sm:px-5 md:grid-cols-[0.9fr_1.8fr_0.9fr] md:gap-5 md:px-4 lg:px-5"
             >
-              <Plus className="size-4" />
-              Ajouter une citerne
-            </Button>
-          </div>
+              {/* Capacité totale */}
+              <div className="flex min-w-0 items-center gap-4">
+                <div className="flex size-11 shrink-0 items-center justify-center rounded-lg bg-[#f0f4e9] text-[#556B2F]">
+                  <Database className="size-6" strokeWidth={1.8} />
+                </div>
+
+                <div className="min-w-0">
+                  <p className="text-[11px] font-medium text-slate-500 sm:text-xs">
+                    Capacité totale
+                  </p>
+
+                  <p className="mt-0.5 text-xl font-bold leading-tight tracking-tight text-slate-900 sm:text-[22px]">
+                    {formatLiters(statistics.totalCapacity)}
+                  </p>
+                </div>
+              </div>
+
+              {/* Capacité utilisée et progression */}
+              <div className="min-w-0 border-y border-slate-100 py-3 md:border-y-0 md:border-x md:px-5 md:py-0">
+                <div className="mb-1.5 flex items-end justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="text-[11px] font-medium text-slate-500 sm:text-xs">
+                      Capacité utilisée
+                    </p>
+
+                    <p className="mt-0.5 text-xl font-bold leading-tight tracking-tight text-slate-900 sm:text-[22px]">
+                      {statistics.usedCapacity === null
+                        ? "—"
+                        : formatLiters(statistics.usedCapacity)}
+                    </p>
+                  </div>
+
+                  <span className="mb-0.5 shrink-0 text-[11px] font-medium text-slate-500">
+                    {statistics.usedCapacity === null
+                      ? "—"
+                      : `${statistics.usagePercentage}%`}
+                  </span>
+                </div>
+
+                <div
+                  className="h-2 w-full overflow-hidden rounded-full bg-slate-100"
+                  role="progressbar"
+                  aria-label="Taux d'utilisation"
+                  aria-valuemin={0}
+                  aria-valuemax={100}
+                  aria-valuenow={
+                    statistics.usedCapacity === null
+                      ? 0
+                      : statistics.usagePercentage
+                  }
+                >
+                  <div
+                    className="h-full rounded-full bg-[#556B2F] transition-[width] duration-300"
+                    style={{
+                      width:
+                        statistics.usedCapacity === null
+                          ? "0%"
+                          : `${statistics.usagePercentage}%`,
+                    }}
+                  />
+                </div>
+              </div>
+
+              {/* Capacité disponible */}
+              <div className="min-w-0 md:pl-1">
+                <p className="text-[11px] font-medium text-slate-500 sm:text-xs">
+                  Capacité disponible
+                </p>
+
+                <div className="mt-0.5 flex flex-wrap items-baseline gap-3">
+                  <p className="text-xl font-bold leading-tight tracking-tight text-slate-900 sm:text-[22px]">
+                    {statistics.availableCapacity === null
+                      ? "—"
+                      : formatLiters(statistics.availableCapacity)}
+                  </p>
+
+                  <span className="text-[11px] font-medium text-slate-500">
+                    {statistics.availableCapacity === null
+                      ? "—"
+                      : `${100 - statistics.usagePercentage}%`}
+                  </span>
+                </div>
+              </div>
+            </section>
+          </header>
         </div>
       </Container>
 
@@ -353,7 +507,7 @@ const handleConfirmDelete = async () => {
         {error && (
           <div
             role="alert"
-            className="mb-4 flex items-start justify-between gap-3 rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700"
+            className="mb-4 flex items-start justify-between gap-3 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700"
           >
             <span>{error}</span>
 
@@ -361,6 +515,7 @@ const handleConfirmDelete = async () => {
               type="button"
               onClick={() => setError("")}
               aria-label="Fermer le message"
+              className="rounded-md p-1 hover:bg-red-100"
             >
               <X className="size-4" />
             </button>
@@ -376,69 +531,89 @@ const handleConfirmDelete = async () => {
         />
       </Container>
 
+      {/* Confirmation de suppression */}
       {citerneToDelete && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4 backdrop-blur-[2px]"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 px-4 backdrop-blur-[3px]"
           onClick={handleCancelDelete}
         >
           <div
             role="dialog"
             aria-modal="true"
             aria-labelledby="delete-title"
-            className="relative w-full max-w-[500px] rounded-xl bg-white p-8 shadow-2xl"
+            className="relative w-full max-w-[440px] rounded-2xl border border-slate-100 bg-white p-7 shadow-2xl sm:p-8"
             onClick={(event) => event.stopPropagation()}
           >
             <button
               type="button"
               onClick={handleCancelDelete}
-              className="absolute right-5 top-5 flex size-9 items-center justify-center rounded-lg text-gray-400 transition hover:bg-gray-100 hover:text-gray-700"
+              disabled={isDeleting}
               aria-label="Fermer"
+              className="absolute right-4 top-4 flex size-9 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100 disabled:opacity-50"
             >
               <X className="size-5" />
             </button>
 
             <div className="flex justify-center">
-              <div className="flex size-20 items-center justify-center rounded-full bg-red-50">
-                <Trash2 className="size-10 text-red-500" />
+              <div className="flex size-16 items-center justify-center rounded-2xl bg-rose-50">
+                <Trash2 className="size-8 text-rose-500" />
               </div>
             </div>
 
             <div className="mt-5 text-center">
               <h2
                 id="delete-title"
-                className="text-2xl font-bold text-gray-900"
+                className="text-xl font-bold text-slate-900"
               >
-                Supprimer la citerne
+                Supprimer la citerne ?
               </h2>
 
-              <p className="mt-3 text-base text-gray-500">
-                Voulez-vous vraiment supprimer la citerne
+              <p className="mt-3 text-sm leading-6 text-slate-500">
+                Cette action supprimera la citerne sélectionnée.
+                Voulez-vous continuer ?
               </p>
 
-              <p className="mt-1 font-semibold text-gray-900">
-                {citerneToDelete.reference ||
-                  citerneToDelete.libelle}{" "}
-                ?
-              </p>
+              <div className="mt-4 rounded-xl border border-slate-100 bg-slate-50 px-4 py-3">
+                <p className="text-sm font-semibold text-slate-800">
+                  {citerneToDelete.reference ||
+                    citerneToDelete.libelle ||
+                    `Citerne ${citerneToDelete.citerneId}`}
+                </p>
+
+                <p className="mt-1 text-xs text-slate-500">
+                  Capacité : {citerneToDelete.capacity} L
+                </p>
+              </div>
             </div>
 
-            <div className="mt-7 flex justify-center gap-4">
+            <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-center">
               <Button
                 type="button"
                 variant="outline"
                 onClick={handleCancelDelete}
-                className="h-12 min-w-[125px] rounded-lg"
+                disabled={isDeleting}
+                className="h-11 rounded-lg px-5"
               >
                 Annuler
               </Button>
 
               <Button
                 type="button"
-                onClick={handleConfirmDelete}
-                className="h-12 min-w-[150px] rounded-lg bg-red-500 text-white hover:bg-red-600"
+                onClick={() => void handleConfirmDelete()}
+                disabled={isDeleting}
+                className="h-11 rounded-lg bg-rose-500 px-5 font-semibold text-white hover:bg-rose-600 disabled:opacity-60"
               >
-                <Trash2 className="mr-2 size-5" />
-                Supprimer
+                {isDeleting ? (
+                  <>
+                    <RefreshCw className="mr-2 size-4 animate-spin" />
+                    Suppression...
+                  </>
+                ) : (
+                  <>
+                    <Trash2 className="mr-2 size-4" />
+                    Confirmer la suppression
+                  </>
+                )}
               </Button>
             </div>
           </div>
@@ -449,4 +624,3 @@ const handleConfirmDelete = async () => {
 }
 
 export default CiternePage;
-

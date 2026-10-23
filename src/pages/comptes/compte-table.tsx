@@ -488,55 +488,7 @@ export function CompteTable({
       <div className="overflow-hidden rounded-xl border border-[#e5e7eb] bg-white shadow-[0_2px_12px_rgba(15,23,42,0.04)]">
         {/* STATISTIQUES */}
         {/* STATISTIQUES */}
-        <div className="grid grid-cols-1 gap-3 border-b border-[#edf0f2] bg-white p-4 sm:grid-cols-2 xl:grid-cols-4">
-          <div className="flex h-[76px] items-center gap-3 rounded-xl border border-[#e5e7eb] bg-white px-4">
-            <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-[#eef4e6]">
-              <Users className="size-5 text-[#556B2F]" />
-            </div>
-            <div>
-              <p className="text-xl font-bold text-[#172033]">
-                {totalComptes}
-              </p>
-              <p className="text-xs text-[#7b8798]">Comptes au total</p>
-            </div>
-          </div>
-
-          <div className="flex h-[76px] items-center gap-3 rounded-xl border border-[#e5e7eb] bg-white px-4">
-            <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-[#e3f5e9]">
-              <CheckCircle2 className="size-5 text-[#16833b]" />
-            </div>
-            <div>
-              <p className="text-xl font-bold text-[#172033]">
-                {activeComptes}
-              </p>
-              <p className="text-xs text-[#7b8798]">Comptes actifs</p>
-            </div>
-          </div>
-
-          <div className="flex h-[76px] items-center gap-3 rounded-xl border border-[#e5e7eb] bg-white px-4">
-            <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-[#fdebed]">
-              <X className="size-5 text-[#ef3340]" />
-            </div>
-            <div>
-              <p className="text-xl font-bold text-[#172033]">
-                {inactiveComptes}
-              </p>
-              <p className="text-xs text-[#7b8798]">Comptes inactifs</p>
-            </div>
-          </div>
-
-          <div className="flex h-[76px] items-center gap-3 rounded-xl border border-[#e5e7eb] bg-white px-4">
-            <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-[#e5efff]">
-              <Mail className="size-5 text-[#4679b8]" />
-            </div>
-            <div>
-              <p className="text-xl font-bold text-[#172033]">
-                {comptesWithEmail}
-              </p>
-              <p className="text-xs text-[#7b8798]">Avec email</p>
-            </div>
-          </div>
-        </div>
+        
 
         {/* FILTRES + ACTIONS */}
         <div className="flex flex-col gap-4 border-b border-[#e5e7eb] bg-white px-4 py-4 sm:px-5 xl:flex-row xl:items-center xl:justify-between">
@@ -576,26 +528,26 @@ export function CompteTable({
             })}
           </div>
 
-          <div className="flex shrink-0 items-center gap-2">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => setStatusFilter('Tous')}
-              className="h-10 rounded-lg border-[#dfe4e9] px-3 text-xs text-[#334155] hover:border-[#556B2F] hover:bg-[#f5f8f1] hover:text-[#556B2F]"
-            >
-              <RefreshCcw className="size-3.5" />
-              Réinitialiser
-            </Button>
+          <div className="flex shrink-0 items-center gap-3">
+  <Button
+    type="button"
+    variant="outline"
+    onClick={() => setStatusFilter('Tous')}
+    className="h-11 min-w-[150px] justify-center gap-2 rounded-lg border border-[#F3D2B3] bg-[#FFF7ED] px-5 text-sm font-semibold text-[#C2672B] transition hover:border-[#E9B98F] hover:bg-[#FFEDD8] hover:text-[#A94F1D]"
+  >
+    <RefreshCcw className="size-4" />
+    Réinitialiser
+  </Button>
 
-            <Button
-              type="button"
-              onClick={handleExport}
-              className="h-10 rounded-lg bg-[#087f48] px-4 text-xs font-semibold text-white hover:bg-[#066b3c]"
-            >
-              <Download className="size-3.5" />
-              Exporter
-            </Button>
-          </div>
+  <Button
+    type="button"
+    onClick={handleExport}
+    className="h-11 min-w-[140px] justify-center gap-2 rounded-lg border border-[#DCE8CF] bg-[#F4F8EF] px-5 text-sm font-semibold text-[#556B2F] transition hover:border-[#C7D9B3] hover:bg-[#EAF2E0] hover:text-[#435B2B]"
+  >
+    <Download className="size-4" />
+    Exporter
+  </Button>
+</div>
         </div>
 
         {/* GRILLE DES COMPTES */}

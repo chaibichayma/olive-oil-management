@@ -1,4 +1,5 @@
-import { BriefcaseBusiness } from 'lucide-react';
+
+import { ArrowRight, Database } from 'lucide-react';
 
 export interface Tank {
   reference: string;
@@ -43,28 +44,37 @@ export function TankStatus({
   tanks = defaultTanks,
   onViewAll,
 }: TankStatusProps) {
-  const formatNumber = (value: number) => {
-    return value.toLocaleString('fr-FR');
-  };
+  const formatNumber = (value: number) =>
+    value.toLocaleString('fr-FR');
 
   const getPercentage = (level: number, capacity: number) => {
     if (capacity <= 0) return 0;
 
     return Math.min(
-      Math.round((level / capacity) * 100),
+      Math.max(Math.round((level / capacity) * 100), 0),
       100,
     );
   };
 
+  const getProgressColor = (percentage: number) => {
+    if (percentage >= 60) return 'bg-[#529447]';
+    if (percentage >= 30) return 'bg-[#E9BD25]';
+    if (percentage > 0) return 'bg-[#F26464]';
+    return 'bg-gray-200';
+  };
+
   return (
-    <div className="min-w-0 rounded-xl border border-border bg-card p-3 shadow-sm sm:p-4">
+    <section className="w-full min-w-0 overflow-hidden rounded-xl border border-gray-200/80 bg-white p-3 shadow-sm sm:p-4">
+      {/* En-tête */}
+      <div className="flex items-center justify-between gap-2 px-1 py-1">
+        <div className="flex min-w-0 items-center gap-2.5">
+          <Database
+            size={21}
+            strokeWidth={2.1}
+            className="shrink-0 text-emerald-600"
+          />
 
-      {/* ================= HEADER ================= */}
-      <div className="flex items-center justify-between px-2 py-2 sm:px-1 sm:py-2">
-        <div className="flex min-w-0 items-center gap-3">
-          <BriefcaseBusiness className="size-5 shrink-0 text-green-700" />
-
-          <h2 className="truncate text-base font-semibold text-foreground">
+          <h2 className="truncate text-sm font-semibold tracking-[-0.25px] text-gray-800 sm:text-base">
             État des citernes
           </h2>
         </div>
@@ -72,45 +82,40 @@ export function TankStatus({
         <button
           type="button"
           onClick={onViewAll}
-          className="ml-3 shrink-0 text-sm font-medium text-green-700 transition-colors hover:text-green-900"
+          className="group inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-emerald-100 bg-emerald-50/70 px-3 py-2 text-[11px] font-semibold text-emerald-700 transition-all duration-200 hover:border-emerald-200 hover:bg-emerald-100 hover:text-emerald-800 active:scale-[0.97] sm:text-xs"
         >
-          Voir toutes
+          <span>Voir toutes</span>
+          <ArrowRight
+            size={13}
+            strokeWidth={2}
+            className="transition-transform duration-200 group-hover:translate-x-0.5"
+          />
         </button>
       </div>
 
-      {/* ================= TABLE ================= */}
-      <div className="mt-2 overflow-hidden rounded-lg border border-border">
+      {/* Tableau */}
+      <div className="mt-3 w-full min-w-0 overflow-x-auto rounded-lg border border-gray-100">
+        <table className="w-full min-w-[390px] table-fixed border-collapse">
+          <colgroup>
+            <col className="w-[18%]" />
+            <col className="w-[20%]" />
+            <col className="w-[18%]" />
+            <col className="w-[17%]" />
+            <col className="w-[27%]" />
+          </colgroup>
 
-        <table className="w-full table-fixed border-collapse">
-
-          {/* ---------- HEADER ---------- */}
           <thead>
-            <tr className="bg-muted/50">
-
-              <TableHeader width="18%">
-                Référence
-              </TableHeader>
-
-              <TableHeader width="22%">
-                Nom
-              </TableHeader>
-
-              <TableHeader width="20%" align="center">
-                Capacité (L)
-              </TableHeader>
-
-              <TableHeader width="18%" align="center">
-                Niveau (L)
-              </TableHeader>
-
-              <TableHeader width="22%" align="center" last>
+            <tr className="bg-[#F7F8FA]">
+              <TableHeader>Référence</TableHeader>
+              <TableHeader>Nom</TableHeader>
+              <TableHeader align="center">Capacité (L)</TableHeader>
+              <TableHeader align="center">Niveau (L)</TableHeader>
+              <TableHeader align="center" last>
                 Taux
               </TableHeader>
-
             </tr>
           </thead>
 
-          {/* ---------- BODY ---------- */}
           <tbody>
             {tanks.map((tank) => {
               const percentage = getPercentage(
@@ -121,85 +126,89 @@ export function TankStatus({
               return (
                 <tr
                   key={tank.reference}
-                  className="last:[&>td]:border-b-0"
+                  className="transition-colors duration-150 hover:bg-gray-50/80"
                 >
-
-                  {/* Reference */}
                   <TableCell>
-                    <span className="font-medium">
+                    <span className="whitespace-nowrap text-[10px] font-semibold text-gray-700 sm:text-xs">
                       {tank.reference}
                     </span>
                   </TableCell>
 
-                  {/* Name */}
                   <TableCell>
-                    <span className="block truncate">
+                    <span className="block truncate text-[10px] font-medium text-gray-600 sm:text-xs">
                       {tank.name}
                     </span>
                   </TableCell>
 
-                  {/* Capacity */}
                   <TableCell align="center">
-                    {formatNumber(tank.capacity)}
+                    <span className="whitespace-nowrap text-[10px] font-medium tabular-nums text-gray-600 sm:text-xs">
+                      {formatNumber(tank.capacity)}
+                    </span>
                   </TableCell>
 
-                  {/* Level */}
                   <TableCell align="center">
-                    {formatNumber(tank.level)}
+                    <span className="whitespace-nowrap text-[10px] font-medium tabular-nums text-gray-600 sm:text-xs">
+                      {formatNumber(tank.level)}
+                    </span>
                   </TableCell>
 
-                  {/* Progress */}
                   <TableCell align="center" last>
-                    <div className="flex items-center justify-center gap-2">
-
-                      {/* Progress background */}
-                      <div className="h-3 w-14 overflow-hidden rounded-full bg-muted sm:w-16">
+                    <div className="flex items-center justify-center gap-1.5 sm:gap-2">
+                      <div
+                        className="h-2 min-w-0 flex-1 overflow-hidden rounded-full bg-gray-100 sm:h-2.5"
+                        role="progressbar"
+                        aria-label={`Taux de remplissage de ${tank.name}`}
+                        aria-valuemin={0}
+                        aria-valuemax={100}
+                        aria-valuenow={percentage}
+                      >
                         <div
-                          className="h-full rounded-full bg-[#526B2F] transition-all duration-500"
-                          style={{
-                            width: `${percentage}%`,
-                          }}
+                          className={`h-full rounded-full transition-[width] duration-500 ${getProgressColor(
+                            percentage,
+                          )}`}
+                          style={{ width: `${percentage}%` }}
                         />
                       </div>
 
-                      {/* Percentage */}
-                      <span className="w-8 text-right text-xs font-medium text-muted-foreground">
+                      <span className="w-7 shrink-0 text-right text-[10px] font-medium tabular-nums text-gray-500 sm:w-8 sm:text-[11px]">
                         {percentage}%
                       </span>
-
                     </div>
                   </TableCell>
-
                 </tr>
               );
             })}
-          </tbody>
 
+            {tanks.length === 0 && (
+              <tr>
+                <td
+                  colSpan={5}
+                  className="px-3 py-8 text-center text-sm text-gray-400"
+                >
+                  Aucune citerne disponible.
+                </td>
+              </tr>
+            )}
+          </tbody>
         </table>
       </div>
-
-      {/* Petit espace sous le tableau */}
-      <div className="h-1" />
-
-    </div>
+    </section>
   );
 }
 
-/* =====================================================
-   TABLE HEADER
-===================================================== */
+/* --------------------------------
+   En-têtes des colonnes
+--------------------------------- */
 
 interface TableHeaderProps {
   children: React.ReactNode;
   align?: 'left' | 'center' | 'right';
-  width?: string;
   last?: boolean;
 }
 
 function TableHeader({
   children,
   align = 'left',
-  width,
   last = false,
 }: TableHeaderProps) {
   const alignment = {
@@ -210,15 +219,15 @@ function TableHeader({
 
   return (
     <th
-      style={{ width }}
+      scope="col"
       className={`
-        border-b border-border
-        ${!last ? 'border-r' : ''}
-        px-2.5
-        py-3
-        text-xs
-        font-medium
-        text-black
+        border-b border-r border-gray-200/70
+        ${last ? 'border-r-0' : ''}
+        px-1.5 py-3
+        text-[9px] font-semibold
+        leading-tight tracking-[0.1px]
+        text-[#475467]
+        sm:px-2 sm:py-3.5 sm:text-[10px]
         ${alignment[align]}
       `}
     >
@@ -227,9 +236,9 @@ function TableHeader({
   );
 }
 
-/* =====================================================
-   TABLE CELL
-===================================================== */
+/* --------------------------------
+   Cellules du tableau
+--------------------------------- */
 
 interface TableCellProps {
   children: React.ReactNode;
@@ -251,12 +260,10 @@ function TableCell({
   return (
     <td
       className={`
-        border-b border-border
-        ${!last ? 'border-r' : ''}
-        px-2.5
-        py-4
-        text-sm
-        text-foreground
+        border-b border-r border-gray-100
+        ${last ? 'border-r-0' : ''}
+        px-1.5 py-3
+        sm:px-2 sm:py-3.5
         ${alignment[align]}
       `}
     >

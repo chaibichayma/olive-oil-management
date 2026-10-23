@@ -48,11 +48,41 @@ function getMenuKey(item: MenuItem, level: number): string {
   return `${level}:${item.path ?? item.title ?? 'menu'}`;
 }
 
+/**
+ * Initialise toutes les rubriques ayant des enfants comme ouvertes.
+ * Fonctionne également pour les sous-menus imbriqués.
+ */
+function getAllOpenMenus(
+  items: MenuItem[],
+  level = 0,
+): Record<string, boolean> {
+  const result: Record<string, boolean> = {};
+
+  items.forEach((item) => {
+    if (item.children?.length) {
+      const key = getMenuKey(item, level);
+
+      result[key] = true;
+
+      Object.assign(
+        result,
+        getAllOpenMenus(item.children, level + 1),
+      );
+    }
+  });
+
+  return result;
+}
+
 export function SidebarMenu() {
   const { pathname } = useLocation();
 
-  const [openMenus, setOpenMenus] = useState<Record<string, boolean>>({});
+  // Toutes les rubriques sont ouvertes dès le premier affichage.
+  const [openMenus, setOpenMenus] = useState<Record<string, boolean>>(
+    () => getAllOpenMenus(MENU_SIDEBAR as MenuItem[]),
+  );
 
+  // Garde ouvertes les rubriques contenant la page active.
   useEffect(() => {
     const activeMenus: Record<string, boolean> = {};
 
@@ -120,7 +150,7 @@ function SidebarMenuItem({
     return null;
   }
 
-  const hasChildren = Boolean(item.children?.length);
+  const hasChildren = Array.isArray(item.children);
   const key = getMenuKey(item, level);
   const isOpen = Boolean(openMenus[key]);
   const isActive = isPathActive(pathname, item.path);
@@ -132,6 +162,7 @@ function SidebarMenuItem({
     'flex min-h-11 w-full min-w-0 items-center gap-3 rounded-lg px-3 py-3 text-left text-sm font-medium transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70';
 
   const activeClass = 'bg-[#6B833F] text-white shadow-sm';
+
   const inactiveClass =
     'text-white/90 hover:bg-[#647A3A]/70 hover:text-white';
 
@@ -155,6 +186,7 @@ function SidebarMenuItem({
         {Icon && <Icon className="size-5 shrink-0" />}
         {label}
       </span>
+
       {badge}
     </>
   );

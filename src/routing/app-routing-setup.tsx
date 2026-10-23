@@ -16,6 +16,7 @@ import { SaisonPage, AjouterSaisonPage, ModifierSaisonPage } from '@/pages/saiso
 
 import { DashboardPage } from '@/pages/store-admin';
 import { UtilisateurPage, AjouterUtilisateurPage, ModifierUtilisateurPage } from '@/pages/utilisateurs';
+import { VenteHuilePage } from '@/pages/vente-huile/vente-huile-page';
 
 import { Navigate, Route, Routes } from 'react-router';
 
@@ -183,6 +184,10 @@ export function AppRoutingSetup() {
           />
         }
       />
+      <Route
+  path="/store-admin/oil-sales"
+  element={<VenteHuilePage />}
+/>
     </Routes>
   );
 }

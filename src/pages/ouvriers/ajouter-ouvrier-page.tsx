@@ -10,6 +10,9 @@ import {
   Save,
   UserRound,
   X,
+  HardHat,
+  ArrowLeft,
+  Hash,
 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
@@ -23,6 +26,7 @@ export function AjouterOuvrierPage() {
   ============================================================ */
 
   const [formData, setFormData] = useState({
+    id: '',
     nom: '',
     telephone: '',
     cin: '',
@@ -126,25 +130,36 @@ export function AjouterOuvrierPage() {
 
       
 <Container>
-  <div className="min-w-0 py-4 sm:py-5">
-    <h1 className="text-xl font-bold text-foreground sm:text-2xl">
-      Ajouter un ouvrier
-    </h1>
+  <div className="flex flex-col gap-4 py-4 sm:py-5 sm:flex-row sm:items-center sm:justify-between">
+    {/* ICÔNE, TITRE ET SOUS-TITRE */}
+    <div className="flex min-w-0 items-center gap-4">
+      <div className="flex size-14 shrink-0 items-center justify-center rounded-2xl bg-[#EEF3E6] sm:size-16">
+        <HardHat className="size-7 text-[#556B2F] sm:size-8" />
+      </div>
 
-    <div className="mt-2 flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground sm:text-sm">
-      <span>Accueil</span>
-      <span>/</span>
-      <span>Paramétrage</span>
-      <span>/</span>
-      <span>Gestion des ouvriers</span>
-      <span>/</span>
-      <span className="font-medium text-foreground">
-        Ajouter
-      </span>
+      <div className="min-w-0">
+        <h1 className="text-xl font-bold tracking-tight text-[#1E293B] sm:text-2xl">
+          Ajouter un ouvrier
+        </h1>
+
+        <p className="mt-1 text-xs text-slate-500 sm:text-sm">
+          Renseignez les informations pour créer un nouvel ouvrier.
+        </p>
+      </div>
     </div>
+
+    {/* BOUTON RETOUR */}
+    <Button
+      type="button"
+      variant="outline"
+      onClick={() => navigate('/store-admin/workers')}
+      className="h-10 shrink-0 gap-2 self-start rounded-lg border border-[#DCE8CF] bg-[#F4F8EF] px-4 text-sm font-medium text-[#556B2F] transition hover:border-[#C7D9B3] hover:bg-[#EAF2E0] hover:text-[#435B2B] sm:self-center"
+    >
+      <ArrowLeft className="size-4" />
+      Retour à la liste
+    </Button>
   </div>
 </Container>
-
 
 
       {/* ========================================================
@@ -160,18 +175,26 @@ export function AjouterOuvrierPage() {
                 HEADER CARD
             ================================================== */}
 
-            <div className="border-b border-border px-6 py-5">
+            <div className="flex flex-col gap-3 border-b border-[#E9EDE4] bg-[#FCFDFB] px-6 py-5 sm:flex-row sm:items-center sm:justify-between">
+  {/* TITRE ET DESCRIPTION */}
+  <div>
+    <h2 className="text-lg font-bold tracking-tight text-[#1E293B]">
+      Informations de l'ouvrier
+    </h2>
 
-              <h2 className="text-lg font-bold text-foreground">
-                Informations de l'ouvrier
-              </h2>
+    <p className="mt-1 text-sm text-slate-500">
+      Veuillez renseigner les informations nécessaires à la création de l'ouvrier.
+    </p>
+  </div>
 
-              <p className="mt-1 text-sm text-muted-foreground">
-                Veuillez remplir les informations de l'ouvrier.
-              </p>
-
-            </div>
-
+  {/* CHAMPS OBLIGATOIRES */}
+  <div className="flex shrink-0 items-center gap-1.5 self-start  px-3 py-2 sm:self-center">
+    <span className="text-sm font-bold text-red-500">*</span>
+    <span className="text-xs font-medium text-slate-500">
+      Champs obligatoires
+    </span>
+  </div>
+</div>
 
             {/* ==================================================
                 CHAMPS
@@ -180,6 +203,34 @@ export function AjouterOuvrierPage() {
             <div className="px-6 py-6">
 
               <div className="grid grid-cols-1 gap-x-6 gap-y-5 md:grid-cols-2">
+                <div className="space-y-2">
+  <label
+    htmlFor="id"
+    className="text-sm font-medium text-foreground"
+  >
+    ID de l'ouvrier <span className="text-red-500">*</span>
+  </label>
+
+  <div className="relative">
+    <Hash
+      size={18}
+      className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+    />
+
+    <input
+      id="id"
+      name="id"
+      type="number"
+      min="1"
+      step="1"
+      required
+      value={formData.id}
+      onChange={handleChange}
+      placeholder="Ex. : 101"
+      className="h-11 w-full rounded-lg border border-border bg-background pl-10 pr-3 text-sm outline-none transition focus:border-[#556B2F] focus:ring-2 focus:ring-[#556B2F]/20"
+    />
+  </div>
+</div>
 
                 {/* ==================================================
                     NOM COMPLET

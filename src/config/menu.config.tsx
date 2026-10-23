@@ -1,38 +1,52 @@
+
 import {
+  BarChart3,
   BriefcaseBusiness,
   CalendarDays,
+  ClipboardList,
   Container,
+  Droplet,
+  Factory,
   FileText,
   HardHat,
   Home,
   Settings,
+  ShieldCheck,
+  Tags,
+  UserCheck,
   UserRound,
+  UserX,
   Users,
+  Wallet,
+  Wrench,
+  Building2,
+  ShoppingCart,
 } from 'lucide-react';
 
 import { type MenuConfig } from './types';
 
-/**
- * ============================================================
- * SIDEBAR OLIVIER
- * ============================================================
- */
-
 export const MENU_SIDEBAR: MenuConfig = [
+  // Tableau de bord
   {
     title: 'Tableau de bord',
     icon: Home,
     path: '/store-admin/dashboard',
   },
 
+  // 1. PARAMÉTRAGE
   {
     title: 'Paramétrage',
     icon: Settings,
     children: [
       {
-        title: 'Saison',
-        icon: UserRound,
-        path: '/store-admin/saison',
+        title: 'Fonctions',
+        icon: Wrench,
+        path: '/store-admin/functions',
+      },
+      {
+        title: 'Départements',
+        icon: Building2,
+        path: '/store-admin/departments',
       },
       {
         title: 'Citernes',
@@ -40,158 +54,126 @@ export const MENU_SIDEBAR: MenuConfig = [
         path: '/store-admin/tanks',
       },
       {
+        title: 'Rubriques',
+        icon: Tags,
+        path: '/store-admin/rubrics',
+      },
+    ],
+  },
+
+  // 2. SÉCURITÉ
+  {
+    title: 'Sécurité',
+    icon: ShieldCheck,
+    children: [
+      {
         title: 'Utilisateurs',
         icon: Users,
         path: '/store-admin/users',
       },
       {
-        title: 'Comptes',
-        icon: BriefcaseBusiness,
-        path: '/store-admin/accounts',
+        title: 'Profils',
+        icon: UserRound,
+        path: '/store-admin/profiles',
       },
+    ],
+  },
+
+  {
+  title: 'Production',
+  icon: Factory,
+  children: [
+    {
+      title: 'Saison',
+      icon: CalendarDays,
+      path: '/store-admin/saison',
+    },
+    {
+      title: 'Compte',
+      icon: BriefcaseBusiness,
+      path: '/store-admin/accounts',
+    },
+    {
+      title: 'Bon de réception',
+      icon: FileText,
+      path: '/store-admin/reception-vouchers',
+    },
+    {
+      title: 'Traitement des bases',
+      icon: Settings,
+      path: '/store-admin/base-processing',
+    },
+    {
+      title: 'Vente huile',
+      icon: ShoppingCart,
+      path: '/store-admin/oil-sales',
+    },
+    {
+      title: 'Achat huile',
+      icon: Droplet,
+      path: '/store-admin/oil-purchases',
+    },
+  ],
+},
+
+  // 4. TRÉSORERIE
+  {
+    title: 'Trésorerie',
+    icon: Wallet,
+    children: [
+      // Ajouter ici les sous-menus de trésorerie.
+    ],
+  },
+
+  // 5. GESTION ADMINISTRATIVE
+  {
+    title: 'Gestion Administrative',
+    icon: ClipboardList,
+    children: [
       {
         title: 'Gestion des ouvriers',
         icon: HardHat,
         path: '/store-admin/workers',
       },
       {
-      title: 'Plannings des ouvriers',
-      icon: CalendarDays,
-      path: '/store-admin/worker-plannings',
-    },
+        title: 'Planning des ouvriers',
+        icon: CalendarDays,
+        path: '/store-admin/worker-plannings',
+      },
+      {
+        title: 'Gestion des présences',
+        icon: UserCheck,
+        path: '/store-admin/worker-attendances',
+      },
+      {
+        title: 'Gestion des absences',
+        icon: UserX,
+        path: '/store-admin/worker-absences',
+      },
+      {
+        title: 'Paiement des ouvriers',
+        icon: Wallet,
+        path: '/store-admin/worker-payments',
+      },
     ],
   },
 
+  // 6. ÉDITION ET STATISTIQUES
   {
-    title: 'Bon de réception',
-    icon: FileText,
-    path: '/store-admin/reception-vouchers',
-  },
-];
-
-/**
- * ============================================================
- * SIDEBAR CUSTOM
- * ============================================================
- */
-
-export const MENU_SIDEBAR_CUSTOM: MenuConfig = [
-  {
-    title: 'Tableau de bord',
-    icon: Home,
-    path: '/store-admin/dashboard',
-  },
-
-  {
-    title: 'Paramétrage',
-    icon: Settings,
+    title: 'Édition et statistiques',
+    icon: BarChart3,
     children: [
-      {
-        title: 'Saison',
-        icon: UserRound,
-        path: '/store-admin/saison',
-      },
-      {
-        title: 'Citernes',
-        icon: Container,
-        path: '/store-admin/tanks',
-      },
-      {
-        title: 'Utilisateurs',
-        icon: Users,
-        path: '/store-admin/users',
-      },
-      {
-        title: 'Comptes',
-        icon: BriefcaseBusiness,
-        path: '/store-admin/accounts',
-      },
+      // Ajouter ici les sous-menus des statistiques.
     ],
-  },
-
-  {
-    title: 'Bon de réception',
-    icon: FileText,
-    path: '/store-admin/reception-vouchers',
   },
 ];
 
-/**
- * ============================================================
- * SIDEBAR COMPACT
- * ============================================================
- */
-
-export const MENU_SIDEBAR_COMPACT: MenuConfig = [
-  {
-    title: 'Tableau de bord',
-    icon: Home,
-    path: '/store-admin/dashboard',
-  },
-
-  {
-    title: 'Paramétrage',
-    icon: Settings,
-    children: [
-      {
-        title: 'Saison',
-        icon: UserRound,
-        path: '/store-admin/saison',
-      },
-      {
-  title: 'Citernes',
-  icon: Container,
-  path: '/store-admin/tanks',
-},
-      {
-  title: 'Utilisateurs',
-  icon: Users,
-  path: '/store-admin/users',
-},
-      {
-  title: 'Comptes',
-  icon: BriefcaseBusiness,
-  path: '/store-admin/accounts',
-},
-    ],
-  },
-
-  {
-  title: 'Bon de réception',
-  icon: FileText,
-  path: '/store-admin/reception-vouchers',
-},
-];
-
-/**
- * ============================================================
- * MEGA MENU
- * ============================================================
- */
+export const MENU_SIDEBAR_CUSTOM: MenuConfig = MENU_SIDEBAR;
+export const MENU_SIDEBAR_COMPACT: MenuConfig = MENU_SIDEBAR;
 
 export const MENU_MEGA: MenuConfig = [];
-
-/**
- * ============================================================
- * MEGA MENU MOBILE
- * ============================================================
- */
-
 export const MENU_MEGA_MOBILE: MenuConfig = [];
-
-/**
- * ============================================================
- * HELP MENU
- * ============================================================
- */
-
 export const MENU_HELP: MenuConfig = [];
-
-/**
- * ============================================================
- * ROOT MENU
- * ============================================================
- */
 
 export const MENU_ROOT: MenuConfig = [
   {
@@ -201,20 +183,46 @@ export const MENU_ROOT: MenuConfig = [
     path: '/store-admin/dashboard',
     childrenIndex: 0,
   },
-
   {
-    title: 'Paramétrage',
+    title: '1. Paramétrage',
     icon: Settings,
     rootPath: '/store-admin/',
-    path: '/store-admin/saison',
+    path: '/store-admin/functions',
     childrenIndex: 1,
   },
-
   {
-    title: 'Bon de réception',
-    icon: FileText,
+    title: '2. Sécurité',
+    icon: ShieldCheck,
     rootPath: '/store-admin/',
-    path: '/store-admin/reception-vouchers',
+    path: '/store-admin/users',
     childrenIndex: 2,
+  },
+  {
+    title: '3. Production',
+    icon: Factory,
+    rootPath: '/store-admin/',
+    path: '/store-admin/saison',
+    childrenIndex: 3,
+  },
+  {
+    title: '4. Trésorerie',
+    icon: Wallet,
+    rootPath: '/store-admin/',
+    path: '/store-admin/treasury',
+    childrenIndex: 4,
+  },
+  {
+    title: '5. Gestion Administrative',
+    icon: ClipboardList,
+    rootPath: '/store-admin/',
+    path: '/store-admin/workers',
+    childrenIndex: 5,
+  },
+  {
+    title: '6. Édition et statistiques',
+    icon: BarChart3,
+    rootPath: '/store-admin/',
+    path: '/store-admin/reports',
+    childrenIndex: 6,
   },
 ];
