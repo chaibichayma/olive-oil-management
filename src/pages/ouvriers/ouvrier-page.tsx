@@ -1,20 +1,19 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 
+import { useCallback, useEffect, useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import {
   Plus,
   Trash2,
   X,
   UsersRound,
+  RefreshCw,
 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Container } from '@/components/common/container';
+import { getOuvriers } from '@/services/api';
 
-import {
-  Ouvrier,
-  OuvrierTable,
-} from './ouvrier-table';
+import { Ouvrier, OuvrierTable } from './ouvrier-table';
 
 /* ============================================================
    PAGE GESTION DES OUVRIERS
@@ -22,300 +21,235 @@ import {
 
 export function OuvrierPage() {
   const navigate = useNavigate();
+  const location = useLocation();
 
-  /* ==========================================================
-     DONNÉES DES OUVRIERS
-  ========================================================== */
-
-  const [ouvriers, setOuvriers] = useState<Ouvrier[]>([
-    {
-      id: 1,
-      nom: 'Mohamed Ali',
-      telephone: '22123456',
-      cin: '12345678',
-      specialite: 'Manutention',
-      salaire: 50,
-      statut: 'Actif',
-      dateAjout: '15/09/2026',
-    },
-    {
-      id: 2,
-      nom: 'Youssef Saidi',
-      telephone: '22234567',
-      cin: '87654321',
-      specialite: 'Pressage',
-      salaire: 60,
-      statut: 'Actif',
-      dateAjout: '14/09/2026',
-    },
-    {
-      id: 3,
-      nom: 'Khaled Amri',
-      telephone: '22345678',
-      cin: '11223344',
-      specialite: 'Entretien',
-      salaire: 55,
-      statut: 'En congé',
-      dateAjout: '12/09/2026',
-    },
-    {
-      id: 4,
-      nom: 'Nour Reda',
-      telephone: '23456789',
-      cin: '44332211',
-      specialite: 'Manutention',
-      salaire: 50,
-      statut: 'Actif',
-      dateAjout: '10/09/2026',
-    },
-    {
-      id: 5,
-      nom: 'Salem Ben Khaled',
-      telephone: '22567890',
-      cin: '55667788',
-      specialite: 'Pressage',
-      salaire: 60,
-      statut: 'Actif',
-      dateAjout: '08/09/2026',
-    },
-    {
-      id: 6,
-      nom: 'Fathi Abdelli',
-      telephone: '21678901',
-      cin: '99887766',
-      specialite: 'Contrôle qualité',
-      salaire: 65,
-      statut: 'Actif',
-      dateAjout: '05/09/2026',
-    },
-    {
-      id: 7,
-      nom: 'Hichem Mansouri',
-      telephone: '22789012',
-      cin: '66778899',
-      specialite: 'Entretien',
-      salaire: 55,
-      statut: 'Inactif',
-      dateAjout: '02/09/2026',
-    },
-    {
-      id: 8,
-      nom: 'Adel Mrad',
-      telephone: '23890123',
-      cin: '33445566',
-      specialite: 'Manutention',
-      salaire: 50,
-      statut: 'Actif',
-      dateAjout: '01/09/2026',
-    },
-    {
-      id: 9,
-      nom: 'Sami Trabelsi',
-      telephone: '22990123',
-      cin: '77889900',
-      specialite: 'Pressage',
-      salaire: 60,
-      statut: 'Actif',
-      dateAjout: '29/08/2026',
-    },
-    {
-      id: 10,
-      nom: 'Ahmed Jaziri',
-      telephone: '22112233',
-      cin: '88990011',
-      specialite: 'Entretien',
-      salaire: 55,
-      statut: 'Actif',
-      dateAjout: '27/08/2026',
-    },
-    {
-      id: 11,
-      nom: 'Walid Ben Amor',
-      telephone: '22334455',
-      cin: '99001122',
-      specialite: 'Manutention',
-      salaire: 50,
-      statut: 'En congé',
-      dateAjout: '25/08/2026',
-    },
-    {
-      id: 12,
-      nom: 'Amine Gharbi',
-      telephone: '22556677',
-      cin: '10112233',
-      specialite: 'Contrôle qualité',
-      salaire: 65,
-      statut: 'Actif',
-      dateAjout: '22/08/2026',
-    },
-  ]);
-
-  /* ==========================================================
-     OUVRIER À SUPPRIMER
-  ========================================================== */
-
+  const [ouvriers, setOuvriers] = useState<Ouvrier[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
   const [ouvrierToDelete, setOuvrierToDelete] =
     useState<Ouvrier | null>(null);
 
-  /* ==========================================================
-     MODIFIER
-  ========================================================== */
+  /* ============================================================
+     CHARGER LES OUVRIERS DEPUIS LE BACKEND
+  ============================================================ */
 
-  const handleEdit = (ouvrier: Ouvrier) => {
-    navigate(`/store-admin/workers/edit/${ouvrier.id}`);
+  const chargerOuvriers = useCallback(async () => {
+    setLoading(true);
+    setError('');
+
+    try {
+      const data = await getOuvriers();
+
+      setOuvriers(data as Ouvrier[]);
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : 'Impossible de charger les ouvriers.',
+      );
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  /* Chargement initial */
+  useEffect(() => {
+    void chargerOuvriers();
+  }, [chargerOuvriers]);
+
+  /* Actualiser après ajout ou modification */
+  useEffect(() => {
+    if (location.state?.refreshOuvriers) {
+      void chargerOuvriers();
+
+      navigate(location.pathname, {
+        replace: true,
+        state: null,
+      });
+    }
+  }, [
+    location.key,
+    location.pathname,
+    location.state,
+    navigate,
+    chargerOuvriers,
+  ]);
+
+  /* ============================================================
+     AJOUTER UN OUVRIER
+  ============================================================ */
+
+  const handleAdd = () => {
+    navigate('/store-admin/workers/form');
   };
 
-  /* ==========================================================
-     OUVRIR SUPPRESSION
-  ========================================================== */
+  /* ============================================================
+     MODIFIER UN OUVRIER
+  ============================================================ */
+
+  const handleEdit = (ouvrier: Ouvrier) => {
+    navigate('/store-admin/workers/form', {
+      state: { ouvrier },
+    });
+  };
+
+  /* ============================================================
+     OUVRIR LA MODALE DE SUPPRESSION
+  ============================================================ */
 
   const handleDelete = (ouvrier: Ouvrier) => {
+    setError('');
     setOuvrierToDelete(ouvrier);
   };
 
-  /* ==========================================================
-     ANNULER SUPPRESSION
-  ========================================================== */
+  /* ============================================================
+     ANNULER LA SUPPRESSION
+  ============================================================ */
 
   const handleCancelDelete = () => {
     setOuvrierToDelete(null);
   };
 
-  /* ==========================================================
-     CONFIRMER SUPPRESSION
-  ========================================================== */
+  /* ============================================================
+     CONFIRMER LA SUPPRESSION
+     
+     À connecter lorsque l'endpoint DELETE sera confirmé.
+  ============================================================ */
 
   const handleConfirmDelete = () => {
-    if (!ouvrierToDelete) return;
-
-    setOuvriers((current) =>
-      current.filter(
-        (ouvrier) => ouvrier.id !== ouvrierToDelete.id,
-      ),
+    setError(
+      'La suppression nécessite de configurer la route DELETE des ouvriers dans Swagger.',
     );
 
     setOuvrierToDelete(null);
   };
 
-  /* ==========================================================
-     AJOUTER
-  ========================================================== */
-
-  const handleAdd = () => {
-    navigate('/store-admin/workers/add');
-  };
-
-  /* ==========================================================
-     RENDER
-  ========================================================== */
+  /* ============================================================
+     AFFICHAGE
+  ============================================================ */
 
   return (
     <>
-      {/* ======================================================
-          EN-TÊTE : GESTION DES OUVRIERS
-      ====================================================== */}
-
+      {/* EN-TÊTE */}
       <Container>
-        <div className="flex min-w-0 flex-col gap-4 py-4 sm:py-5 md:flex-row md:items-center md:justify-between">
-          {/* TITRE ET ICÔNE */}
+        <header className="w-full py-5 sm:py-6">
+          <div className="flex flex-col justify-between gap-5 sm:flex-row sm:items-center">
+            <div className="flex min-w-0 items-center gap-4">
+              <div className="flex size-12 shrink-0 items-center justify-center rounded-xl border border-[#e1e9d7] bg-[#f0f5e8]">
+                <UsersRound className="size-6 text-[#556B2F]" />
+              </div>
 
-          <div className="flex min-w-0 items-center gap-4">
-            <div className="flex size-14 shrink-0 items-center justify-center rounded-2xl bg-[#EEF3E6] sm:size-16">
-              <UsersRound className="size-7 text-[#556B2F] sm:size-8" />
-            </div>
+              <div className="min-w-0">
+                <h1 className="text-xl font-semibold tracking-tight text-[#172033] sm:text-2xl">
+                  Gestion des ouvriers
+                </h1>
 
-            <div className="min-w-0">
-              <h1 className="text-xl font-bold tracking-tight text-[#1E293B] sm:text-2xl">
-                Gestion des ouvriers
-              </h1>
-
-              <p className="mt-1 text-sm text-slate-500">
-                Consultez, ajoutez et gérez les informations des ouvriers.
-              </p>
-            </div>
-          </div>
-
-          {/* BOUTON AJOUTER */}
-
-          <Button
-            type="button"
-            onClick={handleAdd}
-            className="h-10 w-full shrink-0 gap-2 rounded-lg bg-[#556B2F] px-5 text-sm font-semibold text-white shadow-sm transition hover:bg-[#465A27] md:w-auto"
-          >
-            <Plus className="size-4" />
-            Ajouter un ouvrier
-          </Button>
-        </div>
-      </Container>
-
-      {/* ======================================================
-          TABLEAU DES OUVRIERS
-      ====================================================== */}
-
-      <Container>
-        <OuvrierTable
-          ouvriers={ouvriers}
-          onEdit={handleEdit}
-          onDelete={handleDelete}
-        />
-      </Container>
-
-      {/* ======================================================
-          MODALE DE SUPPRESSION
-      ====================================================== */}
-
-      {ouvrierToDelete && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4"
-          onClick={handleCancelDelete}
-        >
-          <div
-            className="relative w-full max-w-[500px] rounded-xl bg-white p-8 shadow-2xl"
-            onClick={(event) => event.stopPropagation()}
-          >
-            {/* FERMER */}
-
-            <button
-              type="button"
-              onClick={handleCancelDelete}
-              className="absolute right-5 top-5 text-gray-500 transition hover:text-gray-800"
-              aria-label="Fermer"
-            >
-              <X className="size-6" />
-            </button>
-
-            {/* ICÔNE */}
-
-            <div className="flex justify-center">
-              <div className="flex size-20 items-center justify-center rounded-full bg-red-50">
-                <Trash2 className="size-10 text-red-500" />
+                <p className="mt-1 text-sm leading-5 text-slate-500 sm:text-[15px]">
+                  Consultez, ajoutez et gérez les informations des ouvriers.
+                </p>
               </div>
             </div>
 
-            {/* TEXTE */}
+            <Button
+              type="button"
+              onClick={handleAdd}
+              className="h-10 w-full shrink-0 gap-2 rounded-lg bg-[#556B2F] px-4 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-[#465A27] sm:w-auto"
+            >
+              <Plus className="size-4" />
+              Ajouter un ouvrier
+            </Button>
+          </div>
+
+          <div className="mt-6 border-b border-[#e8ebdf]" />
+        </header>
+      </Container>
+
+      {/* TABLEAU DES OUVRIERS */}
+      <Container>
+        {error && (
+          <div
+            role="alert"
+            className="mb-4 flex flex-col gap-3 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 sm:flex-row sm:items-center sm:justify-between"
+          >
+            <span>{error}</span>
+
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => void chargerOuvriers()}
+              className="gap-2 border-red-200 bg-white"
+            >
+              <RefreshCw className="size-4" />
+              Réessayer
+            </Button>
+          </div>
+        )}
+
+        {loading ? (
+          <div className="flex items-center justify-center gap-3 py-12 text-sm text-slate-500">
+            <RefreshCw className="size-5 animate-spin text-[#556B2F]" />
+            Chargement des ouvriers...
+          </div>
+        ) : (
+          <OuvrierTable
+            ouvriers={ouvriers}
+            onEdit={handleEdit}
+            onDelete={handleDelete}
+          />
+        )}
+      </Container>
+
+      {/* MODALE DE CONFIRMATION */}
+      {ouvrierToDelete && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 px-4 py-6 backdrop-blur-[2px]"
+          onClick={handleCancelDelete}
+        >
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="delete-worker-title"
+            className="relative w-full max-w-[440px] rounded-2xl border border-slate-100 bg-white p-6 shadow-2xl sm:p-8"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <button
+              type="button"
+              onClick={handleCancelDelete}
+              className="absolute right-4 top-4 flex size-9 items-center justify-center rounded-lg text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
+              aria-label="Fermer"
+            >
+              <X className="size-5" />
+            </button>
+
+            <div className="flex justify-center">
+              <div className="flex size-16 items-center justify-center rounded-2xl bg-red-50">
+                <Trash2 className="size-7 text-red-500" />
+              </div>
+            </div>
 
             <div className="mt-5 text-center">
-              <h2 className="text-2xl font-bold text-gray-900">
-                Supprimer l'ouvrier
+              <h2
+                id="delete-worker-title"
+                className="text-xl font-bold tracking-tight text-slate-900"
+              >
+                Supprimer l'ouvrier ?
               </h2>
 
-              <p className="mt-3 text-base text-gray-500">
-                Voulez-vous vraiment supprimer
+              <p className="mt-3 text-sm leading-6 text-slate-500">
+                Voulez-vous vraiment supprimer l'ouvrier suivant ?
               </p>
 
-              <p className="mt-1 font-semibold text-gray-900">
-                {ouvrierToDelete.nom} ?
+              <p className="mt-2 break-words font-semibold text-slate-800">
+                {ouvrierToDelete.nom}
               </p>
             </div>
 
-            {/* BOUTONS */}
-
-            <div className="mt-7 flex justify-center gap-4">
+            <div className="mt-7 flex flex-col-reverse justify-center gap-3 sm:flex-row">
               <Button
                 type="button"
                 variant="outline"
                 onClick={handleCancelDelete}
-                className="h-12 min-w-[125px]"
+                className="h-11 min-w-[120px] rounded-lg border-slate-200"
               >
                 Annuler
               </Button>
@@ -323,9 +257,9 @@ export function OuvrierPage() {
               <Button
                 type="button"
                 onClick={handleConfirmDelete}
-                className="h-12 min-w-[150px] bg-red-500 text-white hover:bg-red-600"
+                className="h-11 min-w-[145px] rounded-lg bg-red-500 text-white hover:bg-red-600"
               >
-                <Trash2 className="mr-2 size-5" />
+                <Trash2 className="mr-2 size-4" />
                 Supprimer
               </Button>
             </div>
@@ -335,3 +269,5 @@ export function OuvrierPage() {
     </>
   );
 }
+
+export default OuvrierPage;

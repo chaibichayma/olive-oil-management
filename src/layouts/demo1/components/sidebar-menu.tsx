@@ -1,5 +1,5 @@
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { ChevronDown } from 'lucide-react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { MENU_SIDEBAR } from '@/config/menu.config';
@@ -48,65 +48,11 @@ function getMenuKey(item: MenuItem, level: number): string {
   return `${level}:${item.path ?? item.title ?? 'menu'}`;
 }
 
-/**
- * Initialise toutes les rubriques ayant des enfants comme ouvertes.
- * Fonctionne également pour les sous-menus imbriqués.
- */
-function getAllOpenMenus(
-  items: MenuItem[],
-  level = 0,
-): Record<string, boolean> {
-  const result: Record<string, boolean> = {};
-
-  items.forEach((item) => {
-    if (item.children?.length) {
-      const key = getMenuKey(item, level);
-
-      result[key] = true;
-
-      Object.assign(
-        result,
-        getAllOpenMenus(item.children, level + 1),
-      );
-    }
-  });
-
-  return result;
-}
-
 export function SidebarMenu() {
   const { pathname } = useLocation();
 
-  // Toutes les rubriques sont ouvertes dès le premier affichage.
-  const [openMenus, setOpenMenus] = useState<Record<string, boolean>>(
-    () => getAllOpenMenus(MENU_SIDEBAR as MenuItem[]),
-  );
-
-  // Garde ouvertes les rubriques contenant la page active.
-  useEffect(() => {
-    const activeMenus: Record<string, boolean> = {};
-
-    const visit = (items: MenuItem[], level = 0) => {
-      items.forEach((item) => {
-        if (item.children?.length) {
-          const key = getMenuKey(item, level);
-
-          if (hasActiveDescendant(item, pathname)) {
-            activeMenus[key] = true;
-          }
-
-          visit(item.children, level + 1);
-        }
-      });
-    };
-
-    visit(MENU_SIDEBAR as MenuItem[]);
-
-    setOpenMenus((previous) => ({
-      ...previous,
-      ...activeMenus,
-    }));
-  }, [pathname]);
+  // Tous les menus parents sont fermés au chargement.
+  const [openMenus, setOpenMenus] = useState<Record<string, boolean>>({});
 
   const toggleMenu = (key: string) => {
     setOpenMenus((previous) => ({
@@ -118,9 +64,9 @@ export function SidebarMenu() {
   return (
     <nav
       aria-label="Navigation principale"
-      className="w-full min-w-0 bg-[#556B2F] px-2 py-3 text-white sm:px-3"
+      className="w-full min-w-0 bg-[#FAFBF8] px-2 py-3 text-slate-700 sm:px-3"
     >
-      <div className="flex w-full min-w-0 flex-col gap-1">
+      <div className="flex w-full min-w-0 flex-col gap-1.5">
         {(MENU_SIDEBAR as MenuItem[]).map((item, index) => (
           <SidebarMenuItem
             key={`${item.path ?? item.title ?? 'menu'}-${index}`}
@@ -143,14 +89,14 @@ function SidebarMenuItem({
   level = 0,
 }: SidebarMenuItemProps) {
   if (item.separator) {
-    return <div className="my-2 border-t border-white/20" />;
+    return <div className="my-2 border-t border-slate-200" />;
   }
 
   if (!item.title || item.disabled) {
     return null;
   }
 
-  const hasChildren = Array.isArray(item.children);
+  const hasChildren = Boolean(item.children?.length);
   const key = getMenuKey(item, level);
   const isOpen = Boolean(openMenus[key]);
   const isActive = isPathActive(pathname, item.path);
@@ -159,12 +105,17 @@ function SidebarMenuItem({
   const Icon = item.icon;
 
   const baseClass =
-    'flex min-h-11 w-full min-w-0 items-center gap-3 rounded-lg px-3 py-3 text-left text-sm font-medium transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70';
+    'flex min-h-11 w-full min-w-0 items-center gap-3 rounded-lg px-3 py-3 text-left text-sm font-medium transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#556B2F]/40';
 
-  const activeClass = 'bg-[#6B833F] text-white shadow-sm';
+  const parentClass = isOpen
+    ? 'bg-[#EEF1E8] text-[#405321] shadow-sm'
+    : 'bg-white text-slate-700 hover:bg-[#F0F2EC]';
+
+  const activeClass =
+    'bg-[#E8EDDF] text-[#405321] font-semibold';
 
   const inactiveClass =
-    'text-white/90 hover:bg-[#647A3A]/70 hover:text-white';
+    'bg-transparent text-slate-600 hover:bg-[#F0F2EC] hover:text-[#405321]';
 
   const indentStyle = {
     paddingInlineStart: `${12 + Math.min(level, 4) * 12}px`,
@@ -175,7 +126,7 @@ function SidebarMenuItem({
   );
 
   const badge = item.badge ? (
-    <span className="shrink-0 rounded bg-white/20 px-2 py-0.5 text-xs text-white">
+    <span className="shrink-0 rounded-md bg-[#E8EDDF] px-2 py-0.5 text-xs font-medium text-[#405321]">
       {item.badge}
     </span>
   ) : null;
@@ -183,7 +134,12 @@ function SidebarMenuItem({
   const content = (
     <>
       <span className="flex min-w-0 flex-1 items-center gap-3">
-        {Icon && <Icon className="size-5 shrink-0" />}
+        {Icon && (
+          <Icon
+            aria-hidden="true"
+            className="size-5 shrink-0 text-[#556B2F]"
+          />
+        )}
         {label}
       </span>
 
@@ -191,6 +147,7 @@ function SidebarMenuItem({
     </>
   );
 
+  // Rubriques parentes avec sous-menus.
   if (hasChildren) {
     return (
       <div className="w-full min-w-0">
@@ -198,10 +155,8 @@ function SidebarMenuItem({
           type="button"
           aria-expanded={isOpen}
           onClick={() => onToggle(key)}
-          className={`${baseClass} justify-between ${
-            isActive || hasActiveChild || isOpen
-              ? activeClass
-              : inactiveClass
+          className={`${baseClass} justify-between ${parentClass} ${
+            hasActiveChild ? 'border-s border-[#556B2F]' : ''
           }`}
           style={indentStyle}
         >
@@ -209,14 +164,14 @@ function SidebarMenuItem({
 
           <ChevronDown
             aria-hidden="true"
-            className={`size-4 shrink-0 transition-transform duration-200 ${
+            className={`size-4 shrink-0 text-slate-500 transition-transform duration-200 ${
               isOpen ? 'rotate-180' : ''
             }`}
           />
         </button>
 
         {isOpen && (
-          <div className="mt-1 flex w-full min-w-0 flex-col gap-1">
+          <div className="mt-1 flex w-full min-w-0 flex-col gap-1 border-s border-[#E1E6D9] ms-3 ps-1">
             {item.children!.map((child, index) => (
               <SidebarMenuItem
                 key={`${child.path ?? child.title ?? 'submenu'}-${index}`}
@@ -233,6 +188,7 @@ function SidebarMenuItem({
     );
   }
 
+  // Liens de navigation.
   if (item.path && item.path !== '#') {
     return (
       <NavLink
@@ -249,6 +205,7 @@ function SidebarMenuItem({
     );
   }
 
+  // Élément sans route.
   return (
     <div
       className={`${baseClass} ${inactiveClass}`}

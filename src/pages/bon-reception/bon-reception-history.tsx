@@ -14,10 +14,6 @@ import {
 import { BonReception } from './bon-reception-table';
 
 
-/* ============================================================
-   PROPS
-============================================================ */
-
 interface BonReceptionHistoryProps {
   compteId: number | null;
 
@@ -27,28 +23,16 @@ interface BonReceptionHistoryProps {
 }
 
 
-/* ============================================================
-   COMPOSANT HISTORIQUE
-============================================================ */
-
 export function BonReceptionHistory({
   compteId,
   bons,
   onClose,
 }: BonReceptionHistoryProps) {
 
-  /* ==========================================================
-     SI AUCUN COMPTE
-  ========================================================== */
-
   if (compteId === null) {
     return null;
   }
 
-
-  /* ==========================================================
-     BONS DU COMPTE
-  ========================================================== */
 
   const compteBons = bons.filter(
     (bon) =>
@@ -56,13 +40,8 @@ export function BonReceptionHistory({
   );
 
 
-  /* ==========================================================
-     INFORMATIONS COMPTE
-  ========================================================== */
-
   const currentBon =
     compteBons[0];
-
 
   const accountName =
     currentBon?.name ||
@@ -73,10 +52,6 @@ export function BonReceptionHistory({
     currentBon?.mobile ||
     '—';
 
-
-  /* ==========================================================
-     STATISTIQUES
-  ========================================================== */
 
   const totalBons =
     compteBons.length;
@@ -124,9 +99,6 @@ export function BonReceptionHistory({
   };
 
 
-  /* ==========================================================
-     FORMAT PRIX
-  ========================================================== */
 
   const formatPrice = (
     value: number,
@@ -142,10 +114,6 @@ export function BonReceptionHistory({
 
   };
 
-
-  /* ==========================================================
-     STATUT
-  ========================================================== */
 
   const getStatusStyle = (
     status: string,
@@ -214,10 +182,6 @@ export function BonReceptionHistory({
   };
 
 
-  /* ==========================================================
-     RENDER
-  ========================================================== */
-
   return (
 
     <div
@@ -225,20 +189,12 @@ export function BonReceptionHistory({
       onClick={onClose}
     >
 
-      {/* ======================================================
-          PANNEAU DROIT
-      ====================================================== */}
-
       <div
         className="absolute right-0 top-0 flex h-full w-full max-w-[560px] flex-col bg-white shadow-2xl"
         onClick={(event) =>
           event.stopPropagation()
         }
       >
-
-        {/* ====================================================
-            HEADER
-        ==================================================== */}
 
         <div className="flex items-center justify-between border-b border-[#e5e7eb] px-6 py-5">
 
@@ -278,17 +234,7 @@ export function BonReceptionHistory({
 
         </div>
 
-
-        {/* ====================================================
-            CONTENU SCROLLABLE
-        ==================================================== */}
-
         <div className="flex-1 overflow-y-auto">
-
-
-          {/* ==================================================
-              INFORMATIONS COMPTE
-          ================================================== */}
 
           <div className="border-b border-[#edf0f2] bg-[#fafcf9] px-6 py-5">
 
@@ -299,8 +245,6 @@ export function BonReceptionHistory({
                 <UserRound className="size-7 text-[#556B2F]" />
 
               </div>
-
-
               <div className="min-w-0">
 
                 <h3 className="truncate text-lg font-bold text-[#172033]">
@@ -333,11 +277,6 @@ export function BonReceptionHistory({
             </div>
 
           </div>
-
-
-          {/* ==================================================
-              STATISTIQUES
-          ================================================== */}
 
           <div className="grid grid-cols-2 gap-3 border-b border-[#edf0f2] p-5">
 
@@ -469,11 +408,6 @@ export function BonReceptionHistory({
 
           </div>
 
-
-          {/* ==================================================
-              TITRE HISTORIQUE
-          ================================================== */}
-
           <div className="px-6 pt-5">
 
             <div className="flex items-center justify-between">
@@ -497,11 +431,6 @@ export function BonReceptionHistory({
             </div>
 
           </div>
-
-
-          {/* ==================================================
-              TIMELINE
-          ================================================== */}
 
           <div className="px-6 pb-6 pt-5">
 
@@ -724,8 +653,6 @@ export function BonReceptionHistory({
                             </div>
 
 
-                            {/* OBSERVATION */}
-
                             {bon.observation && (
 
                               <div className="mt-3 rounded-lg bg-[#f8fafc] p-3">
@@ -760,11 +687,6 @@ export function BonReceptionHistory({
           </div>
 
         </div>
-
-
-        {/* ====================================================
-            FOOTER
-        ==================================================== */}
 
         <div className="border-t border-[#e5e7eb] bg-white px-6 py-4">
 

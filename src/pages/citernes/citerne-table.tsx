@@ -1,5 +1,6 @@
 
 import { useMemo, useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   AllCommunityModule,
   ModuleRegistry,
@@ -167,6 +168,17 @@ export function CiterneTable({
   );
 
   const safePage = Math.min(currentPage, totalPages);
+  const navigate = useNavigate();
+
+const handleAdd = () => {
+  navigate("/store-admin/tanks/ajouter");
+};
+
+const handleEdit = (citerne: Citerne) => {
+  navigate("/store-admin/tanks/ajouter", {
+    state: { citerne },
+  });
+};
 
   const paginatedCiternes = useMemo(() => {
     const start = (safePage - 1) * pageSize;

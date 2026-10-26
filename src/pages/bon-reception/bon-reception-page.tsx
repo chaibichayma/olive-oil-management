@@ -6,8 +6,6 @@ import {
   Plus,
   Trash2,
   X,
-  Search,
-  RefreshCw,
   FileText,
   ChevronRight,
   Leaf,
@@ -28,18 +26,12 @@ import {
   BonReceptionTable,
 } from './bon-reception-table';
 
-/* ============================================================
-   CONFIGURATION
-============================================================ */
 
 const API_URL = '/olive_app/reception/getListBean';
 const OLIVE_BANNER = '/images/olive-banner.png';
 
 type ApiObject = Record<string, unknown>;
 
-/* ============================================================
-   UTILITAIRES API
-============================================================ */
 
 function extractList(data: unknown): ApiObject[] {
   if (Array.isArray(data)) {
@@ -264,9 +256,6 @@ function normalizeBonReception(
   };
 }
 
-/* ============================================================
-   PAGE BON DE RÉCEPTION
-============================================================ */
 
 export function BonReceptionPage() {
   const navigate = useNavigate();
@@ -278,10 +267,6 @@ export function BonReceptionPage() {
 
   const [bonToDelete, setBonToDelete] =
     useState<BonReception | null>(null);
-
-  /* ==========================================================
-     CHARGEMENT DES BONS
-  ========================================================== */
   
 const receptionStats = [
   {
@@ -428,13 +413,8 @@ function ReceptionStats() {
   }, []);
 
   useEffect(() => {
-    // Valeur temporaire tant que l'API ne gère pas une recherche vide.
     void loadBons('a');
   }, [loadBons]);
-
-  /* ==========================================================
-     RECHERCHE
-  ========================================================== */
 
   const handleSearch = (
     event: React.FormEvent<HTMLFormElement>
@@ -456,17 +436,13 @@ function ReceptionStats() {
     void loadBons('a');
   };
 
-  /* ==========================================================
-     ACTIONS
-  ========================================================== */
-
   const handleAdd = () => {
-    navigate('/store-admin/reception-vouchers/add');
-  };
+  navigate('/store-admin/reception-vouchers/add');
+};
 
-  const handleEdit = (bon: BonReception) => {
-    navigate(`/store-admin/reception-vouchers/edit/${bon.id}`);
-  };
+const handleEdit = (bon: BonReception) => {
+  navigate(`/store-admin/reception-vouchers/edit/${bon.id}`);
+};
 
   const handleDelete = (bon: BonReception) => {
     setBonToDelete(bon);
@@ -487,20 +463,12 @@ function ReceptionStats() {
     setBonToDelete(null);
   };
 
-  /* ==========================================================
-     AFFICHAGE
-  ========================================================== */
-
   return (
     <>
       <Container>
         <div className="py-4 sm:py-6">
 
-          {/* EN-TÊTE AVEC ILLUSTRATION */}
-
           <section className="relative isolate overflow-hidden rounded-2xl border border-[#e7ebdf] bg-gradient-to-r from-[#fbfcf7] via-[#f5f7ed] to-[#edf2df] shadow-sm">
-
-            {/* Illustration en arrière-plan */}
 
             <div
               className="pointer-events-none absolute inset-y-0 right-0 w-full opacity-90 sm:w-[58%]"
@@ -577,20 +545,15 @@ function ReceptionStats() {
         </div>
       </Container>
 
-      
-{/* RECHERCHE ET FILTRES */}
-
 <Container>
 
 
             <BonReceptionTable
-              bons={bons}
-              onEdit={handleEdit}
-              onDelete={handleDelete}
-            />
+  bons={bons}
+  onEdit={handleEdit}
+  onDelete={handleDelete}
+/>
       </Container>
-
-      {/* MODALE DE SUPPRESSION */}
 
       {bonToDelete && (
         <div

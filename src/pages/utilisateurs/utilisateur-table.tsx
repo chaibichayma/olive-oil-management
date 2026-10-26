@@ -33,7 +33,7 @@ export interface Utilisateur {
    DONNÉES STATIQUES
 ============================================================ */
 
-const defaultUtilisateurs: Utilisateur[] = [
+export const defaultUtilisateurs: Utilisateur[] = [
   {
     id: 1,
     displayName: 'Ayah Ben Ali',
@@ -163,9 +163,7 @@ const userImages: Record<number, string> = {
   12: 'https://i.pravatar.cc/100?img=48',
 };
 
-/* ============================================================
-   PROPS
-============================================================ */
+
 
 interface UtilisateurTableProps {
   utilisateurs?: Utilisateur[];
@@ -272,113 +270,113 @@ export function UtilisateurTable({
       { type: 'text/csv;charset=utf-8;' },
     );
 
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
 
-    link.href = url;
-    link.download = 'utilisateurs.csv';
+      link.href = url;
+      link.download = 'utilisateurs.csv';
 
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
 
-    URL.revokeObjectURL(url);
-  };
+      URL.revokeObjectURL(url);
+    };
 
-  /* ============================================================
-     RENDER
-  ============================================================ */
+    /* ============================================================
+      RENDER
+    ============================================================ */
 
-  return (
-    <div className="w-full min-w-0 space-y-4">
-      {/* CONTENEUR PRINCIPAL */}
+    return (
+      <div className="w-full min-w-0 space-y-4">
+        {/* CONTENEUR PRINCIPAL */}
 
-      <div className="overflow-hidden rounded-xl border border-[#e5e7eb] bg-[#f4f8fb] shadow-[0_2px_12px_rgba(15,23,42,0.04)]">
-        {/* FILTRES + RÉINITIALISER + EXPORTER */}
+        <div className="overflow-hidden rounded-xl border border-[#e5e7eb] bg-[#f4f8fb] shadow-[0_2px_12px_rgba(15,23,42,0.04)]">
+          {/* FILTRES + RÉINITIALISER + EXPORTER */}
 
-        <div className="flex flex-col gap-3 border-b border-[#e5e7eb] bg-white px-4 py-4 sm:px-5 xl:flex-row xl:items-center xl:justify-between">
+          <div className="flex flex-col gap-3 border-b border-[#e5e7eb] bg-white px-4 py-4 sm:px-5 xl:flex-row xl:items-center xl:justify-between">
 
-          {/* FILTRES CLIQUABLES */}
+            {/* FILTRES CLIQUABLES */}
 
-          <div className="flex min-w-0 flex-wrap items-center gap-8">
+            <div className="flex min-w-0 flex-wrap items-center gap-8">
 
-            {/* TOUS */}
+              {/* TOUS */}
 
-            <button
-              type="button"
-              onClick={() => setStatusFilter('Tous')}
-              aria-pressed={statusFilter === 'Tous'}
-              className={`flex h-10 min-w-[140px] items-center gap-2 rounded-md border px-4 transition ${
-                statusFilter === 'Tous'
-                  ? 'border-[#c9d9b6] bg-[#f1f6eb] text-[#556B2F]'
-                  : 'border-[#e5e7eb] bg-white text-[#334155] hover:border-[#c9d9b6]'
-              }`}
-            >
-              <span className="size-2 rounded-full bg-[#94a3b8]" />
-              <span className="text-xs font-semibold">Tous</span>
-              <span className="rounded-md bg-[#e9eef3] px-2 py-1 text-[10px] font-bold">
-                {totalUsers}
-              </span>
-            </button>
+              <button
+                type="button"
+                onClick={() => setStatusFilter('Tous')}
+                aria-pressed={statusFilter === 'Tous'}
+                className={`flex h-10 min-w-[140px] items-center gap-2 rounded-md border px-4 transition ${
+                  statusFilter === 'Tous'
+                    ? 'border-[#c9d9b6] bg-[#f1f6eb] text-[#556B2F]'
+                    : 'border-[#e5e7eb] bg-white text-[#334155] hover:border-[#c9d9b6]'
+                }`}
+              >
+                <span className="size-2 rounded-full bg-[#94a3b8]" />
+                <span className="text-xs font-semibold">Tous</span>
+                <span className="rounded-md bg-[#e9eef3] px-2 py-1 text-[10px] font-bold">
+                  {totalUsers}
+                </span>
+              </button>
 
-            {/* ACTIFS */}
+              {/* ACTIFS */}
 
-            <button
-              type="button"
-              onClick={() => setStatusFilter('Actifs')}
-              aria-pressed={statusFilter === 'Actifs'}
-              className={`flex h-10 min-w-[200px] items-center gap-2 rounded-md border px-3 transition ${
-                statusFilter === 'Actifs'
-                  ? 'border-[#b8e3c7] bg-[#f0faf3] text-[#16833b]'
-                  : 'border-[#e5e7eb] bg-white text-[#334155] hover:border-[#b8e3c7]'
-              }`}
-            >
-              <span className="size-2 rounded-full bg-[#16a34a]" />
-              <span className="text-xs font-semibold">Actifs</span>
-              <span className="rounded-md bg-[#e3f5e9] px-2 py-1 text-[10px] font-bold text-[#16833b]">
-                {activeUsers}
-              </span>
-            </button>
+              <button
+                type="button"
+                onClick={() => setStatusFilter('Actifs')}
+                aria-pressed={statusFilter === 'Actifs'}
+                className={`flex h-10 min-w-[200px] items-center gap-2 rounded-md border px-3 transition ${
+                  statusFilter === 'Actifs'
+                    ? 'border-[#b8e3c7] bg-[#f0faf3] text-[#16833b]'
+                    : 'border-[#e5e7eb] bg-white text-[#334155] hover:border-[#b8e3c7]'
+                }`}
+              >
+                <span className="size-2 rounded-full bg-[#16a34a]" />
+                <span className="text-xs font-semibold">Actifs</span>
+                <span className="rounded-md bg-[#e3f5e9] px-2 py-1 text-[10px] font-bold text-[#16833b]">
+                  {activeUsers}
+                </span>
+              </button>
 
-            {/* INACTIFS */}
+              {/* INACTIFS */}
 
-            <button
-              type="button"
-              onClick={() => setStatusFilter('Inactifs')}
-              aria-pressed={statusFilter === 'Inactifs'}
-              className={`flex h-10 items-center gap-2 rounded-md border px-3 transition ${
-                statusFilter === 'Inactifs'
-                  ? 'border-[#f5c9cd] bg-[#fff4f4] text-[#dc2635]'
-                  : 'border-[#e5e7eb] bg-white text-[#334155] hover:border-[#f5c9cd]'
-              }`}
-            >
-              <span className="size-2 rounded-full bg-[#ef4444]" />
-              <span className="text-xs font-semibold">Inactifs</span>
-              <span className="rounded-md bg-[#fdebed] px-2 py-1 text-[10px] font-bold text-[#dc2635]">
-                {inactiveUsers}
-              </span>
-            </button>
+              <button
+                type="button"
+                onClick={() => setStatusFilter('Inactifs')}
+                aria-pressed={statusFilter === 'Inactifs'}
+                className={`flex h-10 items-center gap-2 rounded-md border px-3 transition ${
+                  statusFilter === 'Inactifs'
+                    ? 'border-[#f5c9cd] bg-[#fff4f4] text-[#dc2635]'
+                    : 'border-[#e5e7eb] bg-white text-[#334155] hover:border-[#f5c9cd]'
+                }`}
+              >
+                <span className="size-2 rounded-full bg-[#ef4444]" />
+                <span className="text-xs font-semibold">Inactifs</span>
+                <span className="rounded-md bg-[#fdebed] px-2 py-1 text-[10px] font-bold text-[#dc2635]">
+                  {inactiveUsers}
+                </span>
+              </button>
 
-            {/* AVEC EMAIL */}
+              {/* AVEC EMAIL */}
 
-            <button
-              type="button"
-              onClick={() => setStatusFilter('Avec email')}
-              aria-pressed={statusFilter === 'Avec email'}
-              className={`flex h-10 items-center gap-2 rounded-md border px-3 transition ${
-                statusFilter === 'Avec email'
-                  ? 'border-[#bae6fd] bg-[#f0f9ff] text-[#0369a1]'
-                  : 'border-[#e5e7eb] bg-white text-[#334155] hover:border-[#bae6fd]'
-              }`}
-            >
-              <Mail className="size-3.5 text-[#0ea5e9]" />
-              <span className="text-xs font-semibold">Avec email</span>
-              <span className="rounded-md bg-[#e5f4fc] px-2 py-1 text-[10px] font-bold text-[#0369a1]">
-                {usersWithEmail}
-              </span>
-            </button>
+              <button
+                type="button"
+                onClick={() => setStatusFilter('Avec email')}
+                aria-pressed={statusFilter === 'Avec email'}
+                className={`flex h-10 items-center gap-2 rounded-md border px-3 transition ${
+                  statusFilter === 'Avec email'
+                    ? 'border-[#bae6fd] bg-[#f0f9ff] text-[#0369a1]'
+                    : 'border-[#e5e7eb] bg-white text-[#334155] hover:border-[#bae6fd]'
+                }`}
+              >
+                <Mail className="size-3.5 text-[#0ea5e9]" />
+                <span className="text-xs font-semibold">Avec email</span>
+                <span className="rounded-md bg-[#e5f4fc] px-2 py-1 text-[10px] font-bold text-[#0369a1]">
+                  {usersWithEmail}
+                </span>
+              </button>
 
-          </div>
+            </div>
 
           {/* BOUTONS */}
 

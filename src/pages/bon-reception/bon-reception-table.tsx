@@ -1043,7 +1043,7 @@ const getPageNumbers = () => {
                 <button
   type="button"
   title="Modifier"
-  onClick={() => handleEdit(params.data!)}
+  onClick={() => onEdit?.(params.data!)}
   className="flex size-9 items-center justify-center rounded-lg bg-[#eef4e6] text-[#556B2F] transition hover:bg-[#dfead2]"
 >
   <Pencil className="size-[17px]" />

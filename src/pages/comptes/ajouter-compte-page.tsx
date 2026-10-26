@@ -1,6 +1,8 @@
 
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
+import type { Compte } from './compte-table';
+import { saveCompte, updateCompte } from '@/services/compte.api';
 
 import {
   ArrowLeft,
@@ -41,19 +43,25 @@ interface CompteFormData {
 
 export function AjouterComptePage() {
   const navigate = useNavigate();
+const location = useLocation();
 
-  const [formData, setFormData] = useState<CompteFormData>({
-    name: '',
-    adresse: '',
-    mobile: '',
-    mail: '',
-    statusId: '1',
-    priceConv: '0',
-    isBaseCompte: false,
-    baseCompteId: '',
-  });
+const compte = (location.state as { compte?: Compte } | null)?.compte;
+const isEdit = Boolean(compte);
 
-  const [showSuccessModal, setShowSuccessModal] = useState(false);
+const [formData, setFormData] = useState<CompteFormData>(() => ({
+  name: compte?.name ?? '',
+  adresse: compte?.adresse ?? '',
+  mobile: compte?.mobile ?? '',
+  mail: compte?.mail ?? '',
+  statusId: String(compte?.statusId ?? 1),
+  priceConv: String(compte?.priceConv ?? 0),
+  isBaseCompte: compte?.isBaseCompte ?? false,
+  baseCompteId: compte?.baseCompteId == null
+    ? ''
+    : String(compte.baseCompteId),
+}));
+
+const [showSuccessModal, setShowSuccessModal] = useState(false);
 
   /* ==========================================================
      MODIFICATION DES CHAMPS
@@ -90,30 +98,84 @@ export function AjouterComptePage() {
      ENREGISTRER
   ========================================================== */
 
-  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
+  
 
-    const nouveauCompte = {
-      compteId: Date.now(),
-      name: formData.name.trim(),
-      adresse: formData.adresse.trim(),
-      mobile: formData.mobile.trim(),
-      mail: formData.mail.trim(),
-      statusId: Number(formData.statusId),
-      priceConv: Number(formData.priceConv),
-      isBaseCompte: formData.isBaseCompte,
-      baseCompteId: formData.isBaseCompte
-        ? null
-        : formData.baseCompteId.trim() === ''
-          ? null
-          : Number(formData.baseCompteId),
-    };
+const [isSaving, setIsSaving] = useState(false);
+const [errorMessage, setErrorMessage] = useState('');
 
-    console.log('Nouveau compte :', nouveauCompte);
+const handleSubmit = async (
+  event: React.FormEvent<HTMLFormElement>,
+) => {
+  event.preventDefault();
 
-    // Remplacer par un appel API ou Supabase pour enregistrer réellement.
-    setShowSuccessModal(true);
+  if (isSaving) return;
+
+  const priceConv = Number(formData.priceConv);
+
+  if (!formData.name.trim()) {
+    setErrorMessage('Veuillez saisir le nom du compte.');
+    return;
+  }
+
+  if (!formData.mobile.trim()) {
+    setErrorMessage('Veuillez saisir le numéro de téléphone.');
+    return;
+  }
+
+  if (!Number.isFinite(priceConv) || priceConv < 0) {
+    setErrorMessage('Le prix de conversion est invalide.');
+    return;
+  }
+
+  if (isEdit && compte?.compteId == null) {
+    setErrorMessage(
+      "Impossible de modifier ce compte : son identifiant est absent.",
+    );
+    return;
+  }
+
+  const payload = {
+    ...(isEdit ? {} : {}),
+    ...(isEdit && compte?.compteId != null
+      ? { compteId: Number(compte.compteId) }
+      : {}),
+    name: formData.name.trim(),
+    mobile: formData.mobile.trim(),
+    priceKg: priceConv,
+    isBaseCompte: formData.isBaseCompte,
   };
+
+  setIsSaving(true);
+  setErrorMessage('');
+
+  try {
+    if (isEdit) {
+      await updateCompte({
+        ...payload,
+        id: Number((compte as Compte & { id?: number }).id ?? 0),
+        reference:
+          (compte as Compte & { reference?: string }).reference ?? '',
+        compteId: Number(compte!.compteId),
+      });
+    } else {
+      await saveCompte(payload);
+    }
+
+    setShowSuccessModal(true);
+  } catch (error) {
+    console.error('Erreur lors de la sauvegarde du compte :', error);
+
+    setErrorMessage(
+      error instanceof Error
+        ? error.message
+        : 'Une erreur est survenue lors de la sauvegarde.',
+    );
+  } finally {
+    setIsSaving(false);
+  }
+};
+
+
 
   /* ==========================================================
      RENDER
@@ -136,12 +198,12 @@ export function AjouterComptePage() {
               <div className="min-w-0">
                 <div className="mb-1.5 flex flex-wrap items-center gap-2">
                   <h1 className="text-xl font-bold tracking-tight text-[#172033] sm:text-2xl">
-                    Ajouter un compte
+                    {isEdit ? 'Modifier un compte' : 'Ajouter un compte'}
                   </h1>
 
                   <span className="inline-flex items-center gap-1.5 rounded-full border border-[#dfe8d2] bg-[#f5f8f0] px-2.5 py-1 text-[10px] font-semibold text-[#556B2F] sm:text-xs">
                     <span className="size-1.5 rounded-full bg-[#718b4b]" />
-                    Nouveau compte
+                    {isEdit ? 'Modification du compte' : 'Nouveau compte'}
                   </span>
                 </div>
 
@@ -458,6 +520,14 @@ export function AjouterComptePage() {
                 </div>
               </div>
             </section>
+            {errorMessage && (
+  <div
+    role="alert"
+    className="mx-5 mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 sm:mx-7 lg:mx-8"
+  >
+    {errorMessage}
+  </div>
+)}
 
             {/* FOOTER */}
 <div className="flex flex-col-reverse gap-3 border-t border-[#e9ede4] bg-[#fcfdfb] px-5 py-4 sm:flex-row sm:items-center sm:justify-end sm:px-7 lg:px-8">
@@ -473,12 +543,17 @@ export function AjouterComptePage() {
     </Button>
 
     <Button
-      type="submit"
-      className="h-10 gap-2 rounded-lg bg-[#556B2F] px-5 font-semibold text-white shadow-sm hover:bg-[#465A27]"
-    >
-      <Save className="size-4" />
-      Enregistrer le compte
-    </Button>
+  type="submit"
+  disabled={isSaving}
+  className="h-10 gap-2 rounded-lg bg-[#556B2F] px-5 font-semibold text-white hover:bg-[#465A27] disabled:opacity-60"
+>
+  <Save className="size-4" />
+  {isSaving
+    ? 'Enregistrement...'
+    : isEdit
+      ? 'Enregistrer les modifications'
+      : 'Enregistrer le compte'}
+</Button>
   </div>
 </div>
           </div>
@@ -486,58 +561,72 @@ export function AjouterComptePage() {
       </Container>
 
       {/* MODALE SUCCÈS */}
-      {showSuccessModal && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 px-4 py-6 backdrop-blur-[2px]"
-          onClick={() => setShowSuccessModal(false)}
-        >
-          <div
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="success-title"
-            className="w-full max-w-[390px] rounded-2xl border border-slate-100 bg-white p-7 text-center shadow-2xl"
-            onClick={(event) => event.stopPropagation()}
-          >
-            <button
-              type="button"
-              onClick={() => setShowSuccessModal(false)}
-              className="absolute right-4 top-4 hidden"
-              aria-label="Fermer"
-            >
-              <X className="size-4" />
-            </button>
+      {/* MODALE SUCCÈS */}
+{showSuccessModal && (
+  <div
+    className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 px-4 py-6 backdrop-blur-[2px]"
+    onClick={() => {
+      setShowSuccessModal(false);
+      navigate('/store-admin/accounts', {
+        state: { refreshComptes: true },
+      });
+    }}
+  >
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="success-title"
+      className="w-full max-w-[390px] rounded-2xl border border-slate-100 bg-white p-7 text-center shadow-2xl"
+      onClick={(event) => event.stopPropagation()}
+    >
+      <button
+        type="button"
+        onClick={() => {
+          setShowSuccessModal(false);
+          navigate('/store-admin/accounts', {
+            state: { refreshComptes: true },
+          });
+        }}
+        className="absolute right-4 top-4 hidden"
+        aria-label="Fermer"
+      >
+        <X className="size-4" />
+      </button>
 
-            <div className="mx-auto flex size-14 items-center justify-center rounded-2xl bg-[#eef4e6]">
-              <div className="flex size-10 items-center justify-center rounded-full bg-[#556B2F]">
-                <Check className="size-5 text-white" />
-              </div>
-            </div>
-
-            <h2
-              id="success-title"
-              className="mt-4 text-lg font-bold text-[#172033]"
-            >
-              Compte ajouté
-            </h2>
-
-            <p className="mt-2 text-sm leading-6 text-slate-500">
-              Le formulaire a été validé. Le compte pourra être enregistré
-              définitivement après connexion à ton API ou à Supabase.
-            </p>
-
-            <Button
-              type="button"
-              onClick={() => {
-                setShowSuccessModal(false);
-                navigate('/store-admin/accounts');
-              }}
-              className="mt-5 h-10 min-w-[100px] rounded-lg bg-[#556B2F] px-5 font-semibold text-white hover:bg-[#465A27]"
-            >
-              OK
-            </Button>
-          </div>
+      <div className="mx-auto flex size-14 items-center justify-center rounded-2xl bg-[#eef4e6]">
+        <div className="flex size-10 items-center justify-center rounded-full bg-[#556B2F]">
+          <Check className="size-5 text-white" />
         </div>
-      )}
+      </div>
+
+      <h2
+        id="success-title"
+        className="mt-4 text-lg font-bold text-[#172033]"
+      >
+        {isEdit ? 'Compte modifié' : 'Compte ajouté'}
+      </h2>
+
+      <p className="mt-2 text-sm leading-6 text-slate-500">
+        {isEdit
+          ? 'Les informations du compte ont été mises à jour avec succès.'
+          : 'Le nouveau compte a été ajouté avec succès.'}
+      </p>
+
+      <Button
+        type="button"
+        onClick={() => {
+          setShowSuccessModal(false);
+          navigate('/store-admin/accounts', {
+            state: { refreshComptes: true },
+          });
+        }}
+        className="mt-5 h-10 min-w-[100px] rounded-lg bg-[#556B2F] px-5 font-semibold text-white hover:bg-[#465A27]"
+      >
+        OK
+      </Button>
+    </div>
+  </div>
+)}
     </>
   );
 }

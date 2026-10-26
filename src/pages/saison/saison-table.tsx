@@ -43,129 +43,7 @@ export interface Saison {
    DONNÉES STATIQUES
 ========================================================= */
 
-const initialSaisons: Saison[] = [
-  {
-    id: '1',
-    year: 2026,
-    beginDate: '2026-01-01',
-    endDate: '2027-01-31',
-    statusId: 1,
-    priceKilo: 0.8,
-    priceAchat: 10,
-    priceVente: 12,
-    nbreCaisses: 500,
-  },
-  {
-    id: '2',
-    year: 2025,
-    beginDate: '2025-10-01',
-    endDate: '2026-01-31',
-    statusId: 2,
-    priceKilo: 0.75,
-    priceAchat: 9.5,
-    priceVente: 11.5,
-    nbreCaisses: 450,
-  },
-  {
-    id: '3',
-    year: 2024,
-    beginDate: '2024-10-01',
-    endDate: '2025-01-31',
-    statusId: 2,
-    priceKilo: 0.7,
-    priceAchat: 9,
-    priceVente: 11,
-    nbreCaisses: 400,
-  },
-  {
-    id: '4',
-    year: 2023,
-    beginDate: '2023-10-01',
-    endDate: '2024-01-31',
-    statusId: 2,
-    priceKilo: 0.7,
-    priceAchat: 9,
-    priceVente: 11,
-    nbreCaisses: 400,
-  },
-  {
-    id: '5',
-    year: 2022,
-    beginDate: '2022-10-01',
-    endDate: '2023-01-31',
-    statusId: 2,
-    priceKilo: 0.7,
-    priceAchat: 9,
-    priceVente: 11,
-    nbreCaisses: 400,
-  },
-  {
-    id: '6',
-    year: 2021,
-    beginDate: '2021-10-01',
-    endDate: '2022-01-31',
-    statusId: 2,
-    priceKilo: 0.7,
-    priceAchat: 9,
-    priceVente: 11,
-    nbreCaisses: 400,
-  },
-  {
-    id: '7',
-    year: 2020,
-    beginDate: '2020-10-01',
-    endDate: '2021-01-31',
-    statusId: 2,
-    priceKilo: 0.7,
-    priceAchat: 9,
-    priceVente: 11,
-    nbreCaisses: 400,
-  },
-  {
-    id: '8',
-    year: 2019,
-    beginDate: '2019-10-01',
-    endDate: '2020-01-31',
-    statusId: 2,
-    priceKilo: 0.7,
-    priceAchat: 9,
-    priceVente: 11,
-    nbreCaisses: 400,
-  },
-  {
-    id: '9',
-    year: 2018,
-    beginDate: '2018-10-01',
-    endDate: '2021-01-31',
-    statusId: 2,
-    priceKilo: 0.7,
-    priceAchat: 9,
-    priceVente: 11,
-    nbreCaisses: 400,
-  },
-  {
-    id: '10',
-    year: 2017,
-    beginDate: '2017-10-01',
-    endDate: '2018-01-31',
-    statusId: 2,
-    priceKilo: 0.7,
-    priceAchat: 9,
-    priceVente: 11,
-    nbreCaisses: 400,
-  },
-  {
-    id: '11',
-    year: 2016,
-    beginDate: '2016-10-01',
-    endDate: '2017-01-31',
-    statusId: 2,
-    priceKilo: 0.7,
-    priceAchat: 9,
-    priceVente: 11,
-    nbreCaisses: 400,
-  },
-];
+
 
 /* =========================================================
    FORMATAGE
@@ -210,7 +88,7 @@ const saisonTheme = themeQuartz.withParams({
 ========================================================= */
 
 interface SaisonTableProps {
-  saisons?: Saison[];
+  saisons: Saison[];
   onEdit?: (saison: Saison) => void;
   onDelete?: (saison: Saison) => void;
 }
@@ -220,7 +98,7 @@ interface SaisonTableProps {
 ========================================================= */
 
 export function SaisonTable({
-  saisons = initialSaisons,
+  saisons,
   onEdit,
   onDelete,
 }: SaisonTableProps) {

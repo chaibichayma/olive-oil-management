@@ -1,338 +1,245 @@
-import { useState } from 'react';
+
+import { useCallback, useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 import {
-  ChevronRight,
   Plus,
   Trash2,
   X,
   Sprout,
+  Search,
+  RefreshCcw,
 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Container } from '@/components/common/container';
-import { useNavigate } from 'react-router-dom';
 
-import {
-  Saison,
-  SaisonTable,
-} from './saison-table';
-
-/* ============================================================
-   PAGE SAISON
-============================================================ */
+import { Saison, SaisonTable } from './saison-table';
+import { deleteSeason, getSeasons } from '@/api/season.api';
 
 export function SaisonPage() {
-  /* ==========================================================
-     DONNÉES STATIQUES
-  ========================================================== */
+  const navigate = useNavigate();
 
-  const [saisons, setSaisons] = useState<Saison[]>([
-    {
-      id: '1',
-      beginDate: '2026-01-01',
-      endDate: '2027-01-31',
-      statusId: 1,
-      year: 2026,
-      priceKilo: 0.8,
-      priceAchat: 10.0,
-      priceVente: 12.0,
-      nbreCaisses: 500,
-    },
-
-    {
-      id: '2',
-      beginDate: '2025-10-01',
-      endDate: '2026-01-31',
-      statusId: 2,
-      year: 2025,
-      priceKilo: 0.75,
-      priceAchat: 9.5,
-      priceVente: 11.5,
-      nbreCaisses: 450,
-    },
-
-    {
-      id: '3',
-      beginDate: '2024-10-01',
-      endDate: '2025-01-31',
-      statusId: 2,
-      year: 2024,
-      priceKilo: 0.7,
-      priceAchat: 9.0,
-      priceVente: 11.0,
-      nbreCaisses: 400,
-    },
-
-    {
-      id: '4',
-      beginDate: '2023-10-01',
-      endDate: '2024-01-31',
-      statusId: 2,
-      year: 2023,
-      priceKilo: 0.7,
-      priceAchat: 9.0,
-      priceVente: 11.0,
-      nbreCaisses: 400,
-    },
-
-    {
-      id: '5',
-      beginDate: '2022-10-01',
-      endDate: '2023-01-31',
-      statusId: 2,
-      year: 2022,
-      priceKilo: 0.7,
-      priceAchat: 9.0,
-      priceVente: 11.0,
-      nbreCaisses: 400,
-    },
-
-    {
-      id: '6',
-      beginDate: '2021-10-01',
-      endDate: '2022-01-31',
-      statusId: 2,
-      year: 2021,
-      priceKilo: 0.7,
-      priceAchat: 9.0,
-      priceVente: 11.0,
-      nbreCaisses: 400,
-    },
-
-    {
-      id: '7',
-      beginDate: '2020-10-01',
-      endDate: '2021-01-31',
-      statusId: 2,
-      year: 2020,
-      priceKilo: 0.7,
-      priceAchat: 9.0,
-      priceVente: 11.0,
-      nbreCaisses: 400,
-    },
-
-    {
-      id: '8',
-      beginDate: '2019-10-01',
-      endDate: '2020-01-31',
-      statusId: 2,
-      year: 2019,
-      priceKilo: 0.7,
-      priceAchat: 9.0,
-      priceVente: 11.0,
-      nbreCaisses: 400,
-    },
-
-    {
-      id: '9',
-      beginDate: '2018-10-01',
-      endDate: '2019-01-31',
-      statusId: 2,
-      year: 2018,
-      priceKilo: 0.7,
-      priceAchat: 9.0,
-      priceVente: 11.0,
-      nbreCaisses: 400,
-    },
-
-    {
-      id: '10',
-      beginDate: '2017-10-01',
-      endDate: '2018-01-31',
-      statusId: 2,
-      year: 2017,
-      priceKilo: 0.7,
-      priceAchat: 9.0,
-      priceVente: 11.0,
-      nbreCaisses: 400,
-    },
-
-    {
-      id: '11',
-      beginDate: '2016-10-01',
-      endDate: '2017-01-31',
-      statusId: 2,
-      year: 2016,
-      priceKilo: 0.7,
-      priceAchat: 9.0,
-      priceVente: 11.0,
-      nbreCaisses: 400,
-    },
-  ]);
-
-
-const handleAdd = () => {
-  navigate('/store-admin/saison/add');
-};
-
-  /* ==========================================================
-     SAISON À SUPPRIMER
-  ========================================================== */
-
+  const [saisons, setSaisons] = useState<Saison[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [deleteLoading, setDeleteLoading] = useState(false);
+  const [searche, setSearche] = useState('');
   const [saisonToDelete, setSaisonToDelete] =
     useState<Saison | null>(null);
 
-  /* ==========================================================
-     MODIFIER
-  ========================================================== */
-const navigate = useNavigate();
+  // ======================================================
+  // CHARGEMENT DES SAISONS DEPUIS L'API
+  // ======================================================
 
-const handleEdit = (saison: Saison) => {
-  navigate(`/store-admin/saison/edit/${saison.id}`);
-};
-  /* ==========================================================
-     SUPPRESSION
-  ========================================================== */
+  const chargerSaisons = useCallback(async (recherche: string) => {
+    setLoading(true);
+    setError('');
+
+    try {
+      const data = await getSeasons(recherche);
+      setSaisons(data as Saison[]);
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : 'Impossible de charger les saisons.',
+      );
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    void chargerSaisons(searche);
+  }, [chargerSaisons, searche]);
+
+  // ======================================================
+  // NAVIGATION
+  // ======================================================
+
+  const handleAdd = () => {
+    navigate('/store-admin/saison/ajouter');
+  };
+
+  const handleEdit = (saison: Saison) => {
+    navigate('/store-admin/saison/ajouter', {
+      state: { saison },
+    });
+  };
+
+  // ======================================================
+  // SUPPRESSION
+  // ======================================================
 
   const handleDelete = (saison: Saison) => {
     setSaisonToDelete(saison);
   };
 
-  /* ==========================================================
-     ANNULER SUPPRESSION
-  ========================================================== */
-
   const handleCancelDelete = () => {
+    if (deleteLoading) return;
     setSaisonToDelete(null);
   };
 
-  /* ==========================================================
-     CONFIRMER SUPPRESSION
-  ========================================================== */
+  const handleConfirmDelete = async () => {
+    if (!saisonToDelete || deleteLoading) return;
 
-  const handleConfirmDelete = () => {
-    if (!saisonToDelete) {
+    const id = saisonToDelete.id;
+
+    if (
+      id === undefined ||
+      id === null ||
+      String(id).trim() === ''
+    ) {
+      setError('Identifiant de saison introuvable.');
       return;
     }
 
-    setSaisons((current) =>
-      current.filter(
-        (item) => item.id !== saisonToDelete.id,
-      ),
-    );
+    setDeleteLoading(true);
+    setError('');
 
-    setSaisonToDelete(null);
+    try {
+      await deleteSeason(String(id));
+
+      setSaisonToDelete(null);
+      await chargerSaisons(searche);
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : 'Erreur lors de la suppression de la saison.',
+      );
+    } finally {
+      setDeleteLoading(false);
+    }
   };
 
-
-  /* ==========================================================
-     AJOUTER
-  ========================================================== */
-
-  /* ==========================================================
-     RENDER
-  ========================================================== */
+  // ======================================================
+  // AFFICHAGE
+  // ======================================================
 
   return (
     <>
-      {/* ======================================================
-          HEADER DE PAGE
-      ====================================================== */}
-
+      {/* EN-TÊTE */}
       <Container>
-  <div className="py-4 sm:py-5">
+        <div className="py-4 sm:py-5">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex min-w-0 items-center gap-3.5">
+              <div className="flex size-14 shrink-0 items-center justify-center rounded-2xl border border-[#e2ead7] bg-[#f1f6eb]">
+                <Sprout
+                  className="size-7 text-[#526B2F]"
+                  strokeWidth={2}
+                />
+              </div>
 
-    {/* Fil d'Ariane */}
-    
+              <div className="min-w-0">
+                <h1 className="text-2xl font-bold tracking-tight text-[#172033] sm:text-[28px]">
+                  Saisons
+                </h1>
 
-    {/* Titre et bouton */}
-    <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                <p className="mt-1 text-sm leading-5 text-slate-500">
+                  Gérez les campagnes et les paramètres de production
+                  d'huile d'olive.
+                </p>
+              </div>
+            </div>
 
-      {/* Titre */}
-      <div className="flex min-w-0 items-center gap-3.5">
+            <Button
+              type="button"
+              onClick={handleAdd}
+              className="inline-flex h-11 shrink-0 items-center justify-center gap-2.5 rounded-xl border border-[#526B2F] bg-[#526B2F] px-5 text-sm font-semibold text-white shadow-sm transition-all hover:bg-[#435725]"
+            >
+              <Plus className="size-[18px]" strokeWidth={2.2} />
+              Ajouter une saison
+            </Button>
+          </div>
 
-        {/* Icône */}
-        <div className="flex size-14 shrink-0 items-center justify-center rounded-2xl border border-[#e2ead7] bg-[#f1f6eb]">
-          <Sprout
-            className="size-7 text-[#526B2F]"
-            strokeWidth={2}
-          />
+          {/* RECHERCHE ET ACTUALISATION */}
+          <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="relative w-full sm:max-w-md">
+              <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-400" />
+
+              <input
+                type="search"
+                value={searche}
+                onChange={(event) => setSearche(event.target.value)}
+                placeholder="Rechercher une saison..."
+                aria-label="Rechercher une saison"
+                className="h-11 w-full rounded-lg border border-slate-200 bg-white pl-10 pr-4 text-sm outline-none transition focus:border-[#556B2F] focus:ring-2 focus:ring-[#556B2F]/10"
+              />
+            </div>
+
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => void chargerSaisons(searche)}
+              disabled={loading}
+              className="h-11 gap-2 rounded-lg"
+            >
+              <RefreshCcw
+                className={`size-4 ${loading ? 'animate-spin' : ''}`}
+              />
+              Actualiser
+            </Button>
+          </div>
         </div>
-
-        {/* Texte */}
-        <div className="min-w-0">
-          <h1 className="text-2xl font-bold tracking-tight text-[#172033] sm:text-[28px]">
-            Saisons
-          </h1>
-
-          <p className="mt-1 text-sm leading-5 text-slate-500">
-            Gérez les campagnes et les paramètres de production
-            d'huile d'olive.
-          </p>
-        </div>
-      </div>
-
-      {/* Bouton Ajouter */}
-      <Button
-        type="button"
-        onClick={handleAdd}
-        className="
-          inline-flex h-11 shrink-0 items-center justify-center gap-2.5
-          rounded-xl border border-[#526B2F]
-          bg-[#526B2F] px-5
-          text-sm font-semibold text-white
-          shadow-sm
-          transition-all duration-200
-          hover:-translate-y-0.5
-          hover:bg-[#435725]
-          hover:shadow-md
-          focus-visible:outline-none
-          focus-visible:ring-2
-          focus-visible:ring-[#526B2F]/30
-          focus-visible:ring-offset-2
-        "
-      >
-        <Plus className="size-[18px]" strokeWidth={2.2} />
-        Ajouter une saison
-      </Button>
-
-    </div>
-  </div>
-</Container>
-
-      {/* ======================================================
-          TABLEAU
-      ====================================================== */}
-
-      <Container>
-        <SaisonTable
-          saisons={saisons}
-          onEdit={handleEdit}
-          onDelete={handleDelete}
-        />
       </Container>
 
-      {/* ======================================================
-          MODALE SUPPRESSION
-      ====================================================== */}
+      {/* TABLEAU DES SAISONS */}
+      <Container>
+        {error && (
+          <div
+            role="alert"
+            className="mb-4 flex items-start justify-between gap-3 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
+          >
+            <p>{error}</p>
 
+            <button
+              type="button"
+              onClick={() => void chargerSaisons(searche)}
+              className="shrink-0 font-semibold underline"
+            >
+              Réessayer
+            </button>
+          </div>
+        )}
+
+        {loading ? (
+          <div className="flex min-h-[220px] flex-col items-center justify-center gap-3 text-sm text-slate-500">
+            <RefreshCcw className="size-6 animate-spin text-[#526B2F]" />
+            Chargement des saisons...
+          </div>
+        ) : (
+          <SaisonTable
+            saisons={saisons}
+            onEdit={handleEdit}
+            onDelete={handleDelete}
+          />
+        )}
+      </Container>
+
+      {/* MODALE DE SUPPRESSION */}
       {saisonToDelete && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4 backdrop-blur-[2px]"
           onClick={handleCancelDelete}
         >
           <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="delete-season-title"
             className="relative w-full max-w-[500px] rounded-xl bg-white p-8 shadow-2xl"
-            onClick={(event) =>
-              event.stopPropagation()
-            }
+            onClick={(event) => event.stopPropagation()}
           >
-            {/* =================================================
-                FERMER
-            ================================================= */}
-
             <button
               type="button"
               onClick={handleCancelDelete}
-              className="absolute right-5 top-5 flex size-9 items-center justify-center rounded-lg text-gray-400 transition hover:bg-gray-100 hover:text-gray-700"
+              disabled={deleteLoading}
               aria-label="Fermer"
+              className="absolute right-4 top-4 flex size-9 items-center justify-center rounded-lg text-slate-400 transition hover:bg-slate-100 disabled:opacity-50"
             >
               <X className="size-5" />
             </button>
-
-            {/* =================================================
-                ICÔNE
-            ================================================= */}
 
             <div className="flex justify-center">
               <div className="flex size-20 items-center justify-center rounded-full bg-red-50">
@@ -340,18 +247,16 @@ const handleEdit = (saison: Saison) => {
               </div>
             </div>
 
-            {/* =================================================
-                TITRE
-            ================================================= */}
-
             <div className="mt-5 text-center">
-              <h2 className="text-2xl font-bold text-gray-900">
+              <h2
+                id="delete-season-title"
+                className="text-2xl font-bold text-gray-900"
+              >
                 Supprimer la saison
               </h2>
 
               <p className="mt-3 text-base text-gray-500">
-                Voulez-vous vraiment supprimer la
-                saison
+                Voulez-vous vraiment supprimer la saison
               </p>
 
               <p className="mt-1 font-semibold text-gray-900">
@@ -359,32 +264,25 @@ const handleEdit = (saison: Saison) => {
               </p>
             </div>
 
-            {/* =================================================
-                BOUTONS
-            ================================================= */}
-
-            <div className="mt-7 flex justify-center gap-4">
-              {/* ANNULER */}
-
+            <div className="mt-7 flex flex-col-reverse justify-center gap-4 sm:flex-row">
               <Button
                 type="button"
                 variant="outline"
                 onClick={handleCancelDelete}
+                disabled={deleteLoading}
                 className="h-12 min-w-[125px] rounded-lg"
               >
                 Annuler
               </Button>
 
-              {/* SUPPRIMER */}
-
               <Button
                 type="button"
-                onClick={handleConfirmDelete}
-                className="h-12 min-w-[150px] rounded-lg bg-red-500 text-white hover:bg-red-600"
+                onClick={() => void handleConfirmDelete()}
+                disabled={deleteLoading}
+                className="h-12 min-w-[150px] rounded-lg bg-red-500 text-white hover:bg-red-600 disabled:cursor-not-allowed disabled:opacity-60"
               >
                 <Trash2 className="mr-2 size-5" />
-
-                Supprimer
+                {deleteLoading ? 'Suppression...' : 'Supprimer'}
               </Button>
             </div>
           </div>
@@ -393,3 +291,5 @@ const handleEdit = (saison: Saison) => {
     </>
   );
 }
+
+export default SaisonPage;

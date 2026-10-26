@@ -17,14 +17,15 @@ export function Sidebar() {
     <aside
       aria-label="Navigation principale"
       className={cn(
-        'sidebar shrink-0 flex-col items-stretch bg-[#556B2F]',
+        'sidebar shrink-0 flex-col items-stretch',
+        'bg-[#FAFBF8] text-slate-700',
         'hidden lg:fixed lg:inset-y-0 lg:start-0 lg:z-20 lg:flex',
         'w-(--sidebar-default-width) overflow-hidden',
-        'border-e border-white/10',
+        'border-e border-[#E5E9DF]',
         isDark && 'dark',
       )}
     >
-      <div className="w-full shrink-0">
+      <div className="w-full shrink-0 border-b border-[#E5E9DF] bg-white">
         <SidebarHeader />
       </div>
 

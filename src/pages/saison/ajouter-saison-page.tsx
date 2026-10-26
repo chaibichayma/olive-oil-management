@@ -1,5 +1,7 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+
+import { useEffect, useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
+import type { ChangeEvent, FormEvent, ReactNode } from 'react';
 
 import {
   CalendarDays,
@@ -7,7 +9,6 @@ import {
   Hash,
   Save,
   X,
-  ChevronRight,
   Sprout,
   CircleDollarSign,
   Package,
@@ -20,18 +21,36 @@ import {
 
 import { Button } from '@/components/ui/button';
 import { Container } from '@/components/common/container';
+import { saveSeason, updateSeason } from '@/api/season.api';
 
 /* =========================================================
    CONFIGURATION API
 ========================================================= */
 
-const API_URL = '/olive_app/season/save';
+const API_BASE_URL = '/olive_app';
+const SAVE_URL = `${API_BASE_URL}/season/save`;
+
+// Vérifie dans Swagger le chemin exact de l'endpoint de modification.
+const UPDATE_URL = `${API_BASE_URL}/season/update`;
 
 const GREEN = '#556B2F';
 
 /* =========================================================
-   TYPE DU FORMULAIRE
+   TYPES
 ========================================================= */
+
+interface Saison {
+  id?: number | string;
+  beginDate?: string;
+  endDate?: string;
+  statusId?: number;
+  year?: number;
+  priceKilo?: number;
+  priceAchat?: number;
+  priceVente?: number;
+  nbreCaisses?: number;
+  [key: string]: unknown;
+}
 
 interface SaisonFormData {
   beginDate: string;
@@ -44,6 +63,42 @@ interface SaisonFormData {
   nbreCaisses: string;
 }
 
+interface ApiResponse {
+  message?: string;
+  isValid?: boolean;
+  messageCode?: string | null;
+}
+
+const emptyForm: SaisonFormData = {
+  beginDate: '',
+  endDate: '',
+  statusId: '1',
+  year: '',
+  priceKilo: '',
+  priceAchat: '',
+  priceVente: '',
+  nbreCaisses: '',
+};
+
+/* =========================================================
+   CONVERSION DES DONNÉES
+========================================================= */
+
+function toFormData(saison?: Saison): SaisonFormData {
+  if (!saison) return { ...emptyForm };
+
+  return {
+    beginDate: saison.beginDate?.slice(0, 10) ?? '',
+    endDate: saison.endDate?.slice(0, 10) ?? '',
+    statusId: String(saison.statusId ?? 1),
+    year: String(saison.year ?? ''),
+    priceKilo: String(saison.priceKilo ?? ''),
+    priceAchat: String(saison.priceAchat ?? ''),
+    priceVente: String(saison.priceVente ?? ''),
+    nbreCaisses: String(saison.nbreCaisses ?? ''),
+  };
+}
+
 /* =========================================================
    COMPOSANT CHAMP
 ========================================================= */
@@ -51,10 +106,10 @@ interface SaisonFormData {
 interface FieldProps {
   label: string;
   htmlFor: string;
-  icon?: React.ReactNode;
+  icon?: ReactNode;
   unit?: string;
   hint?: string;
-  children: React.ReactNode;
+  children: ReactNode;
 }
 
 function FormField({
@@ -99,49 +154,50 @@ function FormField({
 }
 
 /* =========================================================
-   CLASSES DES CHAMPS
+   CLASSES CSS
 ========================================================= */
 
 const inputClass =
   'h-12 w-full rounded-xl border border-slate-200 bg-white text-sm text-slate-700 shadow-sm outline-none transition-all duration-200 placeholder:text-slate-400 hover:border-slate-300 focus:border-[#556B2F] focus:ring-4 focus:ring-[#556B2F]/10 disabled:cursor-not-allowed disabled:bg-slate-50';
 
 const iconInputClass = `${inputClass} pl-11 pr-4`;
-
-const unitInputClass = `${inputClass} pl-4 pr-20`;
+const unitInputClass = `${inputClass} pl-11 pr-20`;
 
 const selectClass =
   'h-12 w-full appearance-none rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 shadow-sm outline-none transition-all duration-200 hover:border-slate-300 focus:border-[#556B2F] focus:ring-4 focus:ring-[#556B2F]/10';
 
 /* =========================================================
-   COMPOSANT AJOUTER SAISON
+   PAGE : AJOUT ET MODIFICATION
 ========================================================= */
 
 export function AjouterSaisonPage() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const saison = (location.state as { saison?: Saison } | null)?.saison;
+  const isEdit = saison !== undefined && saison !== null;
 
-  const [formData, setFormData] = useState<SaisonFormData>({
-    beginDate: '',
-    endDate: '',
-    statusId: '1',
-    year: '',
-    priceKilo: '',
-    priceAchat: '',
-    priceVente: '',
-    nbreCaisses: '',
-  });
+  const [formData, setFormData] = useState<SaisonFormData>(
+    () => toFormData(saison),
+  );
 
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
+
+  // Actualiser le formulaire si l'utilisateur passe d'une saison
+  // à une autre sans démonter le composant.
+  useEffect(() => {
+    setFormData(toFormData(saison));
+    setErrorMessage('');
+    setShowSuccessModal(false);
+  }, [saison]);
 
   /* =========================================================
      MODIFICATION DES CHAMPS
   ========================================================= */
 
   const handleChange = (
-    event: React.ChangeEvent<
-      HTMLInputElement | HTMLSelectElement
-    >,
+    event: ChangeEvent<HTMLInputElement | HTMLSelectElement>,
   ) => {
     const { name, value } = event.target;
 
@@ -164,194 +220,185 @@ export function AjouterSaisonPage() {
   };
 
   /* =========================================================
-     ENREGISTREMENT API
+     ENREGISTREMENT
   ========================================================= */
 
-  const handleSubmit = async (
-    event: React.FormEvent<HTMLFormElement>,
-  ) => {
-    event.preventDefault();
+  
+const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
+  event.preventDefault();
 
-    if (isSubmitting) return;
+  if (isSubmitting) return;
 
-    setErrorMessage('');
+  setErrorMessage('');
 
-    const requiredFields = [
-      formData.beginDate,
-      formData.endDate,
-      formData.statusId,
-      formData.year,
-      formData.priceKilo,
-      formData.priceAchat,
-      formData.priceVente,
-      formData.nbreCaisses,
-    ];
-
-    if (requiredFields.some((value) => !value.trim())) {
-      setErrorMessage(
-        'Veuillez remplir tous les champs obligatoires.',
-      );
-      return;
-    }
-
-    if (formData.endDate < formData.beginDate) {
-      setErrorMessage(
-        'La date de fin doit être postérieure ou égale à la date de début.',
-      );
-      return;
-    }
-
-    const year = Number(formData.year);
-    const statusId = Number(formData.statusId);
-    const priceKilo = Number(formData.priceKilo);
-    const priceAchat = Number(formData.priceAchat);
-    const priceVente = Number(formData.priceVente);
-    const nbreCaisses = Number(formData.nbreCaisses);
-
-    if (
-      !Number.isInteger(year) ||
-      !Number.isInteger(statusId) ||
-      !Number.isFinite(priceKilo) ||
-      !Number.isFinite(priceAchat) ||
-      !Number.isFinite(priceVente) ||
-      !Number.isInteger(nbreCaisses)
-    ) {
-      setErrorMessage(
-        'Vérifiez l’année, le statut, les prix et le nombre de caisses.',
-      );
-      return;
-    }
-
-    if (
-      year < 1900 ||
-      year > 2100 ||
-      statusId < 0 ||
-      priceKilo < 0 ||
-      priceAchat < 0 ||
-      priceVente < 0 ||
-      nbreCaisses < 0
-    ) {
-      setErrorMessage(
-        'Les valeurs saisies doivent respecter les limites autorisées.',
-      );
-      return;
-    }
-
-    const payload = {
-      createdUser: '',
-      createdDate: new Date().toISOString().slice(0, 10),
-      createdTime: {
-        hour: 0,
-        minute: 0,
-        second: 0,
-        nano: 0,
-      },
-      searche: '',
-      beginDate: formData.beginDate,
-      endDate: formData.endDate,
-      statusId,
-      year,
-      priceKilo,
-      priceAchat,
-      priceVente,
-      nbreCaisses,
-      id: {},
-    };
-
-    console.log('URL API :', API_URL);
-    console.log(
-      'Payload envoyé :',
-      JSON.stringify(payload, null, 2),
+  // 1. Vérifier l'identifiant en mode modification
+  if (
+    isEdit &&
+    (saison?.id === undefined ||
+      saison?.id === null ||
+      String(saison.id).trim() === '')
+  ) {
+    setErrorMessage(
+      "L'identifiant de la saison est manquant. Impossible de la modifier.",
     );
+    return;
+  }
 
-    setIsSubmitting(true);
+  // 2. Vérifier les champs obligatoires
+  const requiredFields = [
+    formData.beginDate,
+    formData.endDate,
+    formData.statusId,
+    formData.year,
+    formData.priceKilo,
+    formData.priceAchat,
+    formData.priceVente,
+    formData.nbreCaisses,
+  ];
 
-    try {
-      const response = await fetch(API_URL, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Accept: '*/*',
-        },
-        body: JSON.stringify(payload),
-      });
+  if (requiredFields.some((value) => !value.trim())) {
+    setErrorMessage('Veuillez remplir tous les champs obligatoires.');
+    return;
+  }
 
-      const responseText = await response.text();
+  // 3. Vérifier les dates
+  if (formData.endDate < formData.beginDate) {
+    setErrorMessage(
+      'La date de fin doit être postérieure ou égale à la date de début.',
+    );
+    return;
+  }
 
-      console.log('Statut HTTP :', response.status);
-      console.log('Réponse serveur :', responseText);
+  // 4. Convertir les valeurs
+  const year = Number(formData.year);
+  const statusId = Number(formData.statusId);
+  const priceKilo = Number(formData.priceKilo);
+  const priceAchat = Number(formData.priceAchat);
+  const priceVente = Number(formData.priceVente);
+  const nbreCaisses = Number(formData.nbreCaisses);
 
-      let responseData: unknown = null;
+  // 5. Vérifier les types numériques
+  if (
+    !Number.isInteger(year) ||
+    !Number.isInteger(statusId) ||
+    !Number.isFinite(priceKilo) ||
+    !Number.isFinite(priceAchat) ||
+    !Number.isFinite(priceVente) ||
+    !Number.isInteger(nbreCaisses)
+  ) {
+    setErrorMessage(
+      "Vérifiez l'année, le statut, les prix et le nombre de caisses.",
+    );
+    return;
+  }
 
-      if (responseText) {
-        try {
-          responseData = JSON.parse(responseText);
-        } catch {
-          responseData = responseText;
-        }
-      }
+  // 6. Vérifier les limites
+  if (
+    year < 1900 ||
+    year > 2100 ||
+    statusId < 0 ||
+    priceKilo < 0 ||
+    priceAchat < 0 ||
+    priceVente < 0 ||
+    nbreCaisses < 0
+  ) {
+    setErrorMessage(
+      'Les valeurs saisies doivent respecter les limites autorisées.',
+    );
+    return;
+  }
 
-      if (!response.ok) {
-        let serverMessage = '';
+  // 7. Préparer les données communes
+  const payload = {
+    createdUser:
+      typeof saison?.createdUser === 'string'
+        ? saison.createdUser
+        : '',
+    createdDate:
+      typeof saison?.createdDate === 'string'
+        ? saison.createdDate.slice(0, 10)
+        : new Date().toISOString().slice(0, 10),
+    createdTime: {
+  hour:
+    typeof saison?.createdTime === 'object' &&
+    saison.createdTime !== null &&
+    'hour' in saison.createdTime &&
+    typeof saison.createdTime.hour === 'number'
+      ? saison.createdTime.hour
+      : 0,
 
-        if (
-          responseData !== null &&
-          typeof responseData === 'object'
-        ) {
-          const data = responseData as {
-            message?: unknown;
-            error?: unknown;
-            detail?: unknown;
-            title?: unknown;
-          };
+  minute:
+    typeof saison?.createdTime === 'object' &&
+    saison.createdTime !== null &&
+    'minute' in saison.createdTime &&
+    typeof saison.createdTime.minute === 'number'
+      ? saison.createdTime.minute
+      : 0,
 
-          serverMessage = String(
-            data.message ??
-              data.detail ??
-              data.error ??
-              data.title ??
-              '',
-          );
-        } else if (typeof responseData === 'string') {
-          serverMessage = responseData;
-        }
+  second:
+    typeof saison?.createdTime === 'object' &&
+    saison.createdTime !== null &&
+    'second' in saison.createdTime &&
+    typeof saison.createdTime.second === 'number'
+      ? saison.createdTime.second
+      : 0,
 
-        throw new Error(
-          serverMessage ||
-            `Erreur HTTP ${response.status}: ${response.statusText}`,
-        );
-      }
-
-      setShowSuccessModal(true);
-    } catch (error) {
-      console.error(
-        'Erreur lors de la création de la saison :',
-        error,
-      );
-
-      if (error instanceof TypeError) {
-        setErrorMessage(
-          "Impossible de joindre l'API. Vérifiez le proxy Vite, l'accès au serveur et la configuration CORS.",
-        );
-      } else {
-        setErrorMessage(
-          error instanceof Error
-            ? error.message
-            : 'Une erreur inattendue est survenue.',
-        );
-      }
-    } finally {
-      setIsSubmitting(false);
-    }
+  nano:
+    typeof saison?.createdTime === 'object' &&
+    saison.createdTime !== null &&
+    'nano' in saison.createdTime &&
+    typeof saison.createdTime.nano === 'number'
+      ? saison.createdTime.nano
+      : 0,
+},
+    searche: '',
+    beginDate: formData.beginDate,
+    endDate: formData.endDate,
+    statusId,
+    year,
+    priceKilo,
+    priceAchat,
+    priceVente,
+    nbreCaisses,
+    id: isEdit ? saison!.id : {},
   };
+
+  setIsSubmitting(true);
+
+try {
+  if (isEdit) {
+    if (saison?.id === undefined || saison.id === null) {
+      throw new Error("L'identifiant de la saison est manquant.");
+    }
+
+    await updateSeason({
+      ...payload,
+      id: saison.id,
+    });
+  } else {
+    await saveSeason({
+      ...payload,
+      id: {},
+    });
+  }
+
+  setShowSuccessModal(true);
+} catch (error) {
+  console.error('Erreur d’enregistrement de la saison :', error);
+
+  setErrorMessage(
+    error instanceof Error
+      ? error.message
+      : 'Une erreur inattendue est survenue.',
+  );
+} finally {
+  setIsSubmitting(false);
+}};
+
 
   /* =========================================================
      MODAL DE SUCCÈS
   ========================================================= */
-
-  const handleCloseSuccess = () => {
-    setShowSuccessModal(false);
-  };
 
   const handleSuccessOk = () => {
     setShowSuccessModal(false);
@@ -366,45 +413,41 @@ export function AjouterSaisonPage() {
     <>
       <Container>
         <div className="pb-5 pt-7">
-          {/* EN-TÊTE */}
           <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
-            <div>
-              
+            <div className="flex items-center gap-3">
+              <div className="flex size-12 shrink-0 items-center justify-center rounded-2xl bg-[#556B2F]/10 text-[#556B2F]">
+                <Sprout className="size-6" />
+              </div>
 
-              <div className="flex items-center gap-3">
-                <div className="flex size-12 shrink-0 items-center justify-center rounded-2xl bg-[#556B2F]/10 text-[#556B2F]">
-                  <Sprout className="size-6" />
-                </div>
+              <div>
+                <h1 className="text-2xl font-bold tracking-tight text-slate-800 sm:text-3xl">
+                  {isEdit ? 'Modifier la saison' : 'Ajouter une saison'}
+                </h1>
 
-                <div>
-                  <h1 className="text-2xl font-bold tracking-tight text-slate-800 sm:text-3xl">
-                    Ajouter une saison
-                  </h1>
-
-                  <p className="mt-1 text-sm text-slate-500">
-                    Configurez les informations de votre nouvelle saison oléicole.
-                  </p>
-                </div>
+                <p className="mt-1 text-sm text-slate-500">
+                  {isEdit
+                    ? 'Modifiez les informations de la saison sélectionnée.'
+                    : 'Configurez les informations de votre nouvelle saison oléicole.'}
+                </p>
               </div>
             </div>
 
             <Button
-  type="button"
-  variant="outline"
-  onClick={handleCancel}
-  disabled={isSubmitting}
-  className="h-10 gap-2 self-start rounded-xl border border-[#DCE8CF] bg-[#F4F8EF] text-[#556B2F] transition hover:border-[#C7D9B3] hover:bg-[#EAF2E0] hover:text-[#435B2B] sm:self-center"
->
-  <ArrowLeft className="size-4 text-[#718747]" />
-  Retour aux saisons
-</Button>
+              type="button"
+              variant="outline"
+              onClick={handleCancel}
+              disabled={isSubmitting}
+              className="h-10 gap-2 self-start rounded-xl border border-[#DCE8CF] bg-[#F4F8EF] text-[#556B2F] transition hover:bg-[#EAF2E0] sm:self-center"
+            >
+              <ArrowLeft className="size-4" />
+              Retour aux saisons
+            </Button>
           </div>
         </div>
       </Container>
 
       <Container>
         <form onSubmit={handleSubmit} className="pb-8">
-          {/* MESSAGE D'ERREUR */}
           {errorMessage && (
             <div
               role="alert"
@@ -414,16 +457,17 @@ export function AjouterSaisonPage() {
 
               <div>
                 <p className="font-semibold">
-                  Impossible d'enregistrer la saison
+                  {isEdit
+                    ? 'Impossible de modifier la saison'
+                    : "Impossible d'ajouter la saison"}
                 </p>
-
                 <p className="mt-1 leading-5">{errorMessage}</p>
               </div>
 
               <button
                 type="button"
                 onClick={() => setErrorMessage('')}
-                className="ml-auto rounded-lg p-1 text-red-400 transition hover:bg-red-100 hover:text-red-700"
+                className="ml-auto rounded-lg p-1 text-red-400 hover:bg-red-100"
                 aria-label="Fermer le message d'erreur"
               >
                 <X className="size-4" />
@@ -432,7 +476,7 @@ export function AjouterSaisonPage() {
           )}
 
           <div className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-[0_8px_30px_rgba(15,23,42,0.045)]">
-            {/* EN-TÊTE DE LA CARTE */}
+            {/* EN-TÊTE */}
             <div className="relative overflow-hidden border-b border-slate-100 bg-gradient-to-r from-[#f6f8f1] via-white to-white px-5 py-6 sm:px-8">
               <div className="absolute right-0 top-0 h-full w-1 bg-[#556B2F]" />
 
@@ -441,14 +485,14 @@ export function AjouterSaisonPage() {
                   <ClipboardList className="size-5" />
                 </div>
 
-                <div className="min-w-0 flex-1">
+                <div>
                   <div className="flex flex-wrap items-center gap-2">
                     <h2 className="text-lg font-bold text-slate-800">
                       Informations de la saison
                     </h2>
 
                     <span className="rounded-full bg-[#556B2F]/10 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-[#556B2F]">
-                      Nouveau
+                      {isEdit ? 'Modification' : 'Nouvelle saison'}
                     </span>
                   </div>
 
@@ -466,7 +510,7 @@ export function AjouterSaisonPage() {
             </div>
 
             <div className="space-y-8 p-5 sm:p-8">
-              {/* SECTION 1 : INFORMATIONS GÉNÉRALES */}
+              {/* INFORMATIONS GÉNÉRALES */}
               <section>
                 <div className="mb-5 flex items-center gap-3">
                   <div className="flex size-9 items-center justify-center rounded-xl bg-[#556B2F]/10 text-[#556B2F]">
@@ -477,7 +521,6 @@ export function AjouterSaisonPage() {
                     <h3 className="text-sm font-bold text-slate-800">
                       Informations générales
                     </h3>
-
                     <p className="mt-0.5 text-xs text-slate-400">
                       Identifiez la saison et définissez sa période.
                     </p>
@@ -485,7 +528,6 @@ export function AjouterSaisonPage() {
                 </div>
 
                 <div className="grid grid-cols-1 gap-x-6 gap-y-5 md:grid-cols-2">
-                  {/* ANNÉE */}
                   <FormField
                     label="Année de la saison"
                     htmlFor="year"
@@ -507,7 +549,6 @@ export function AjouterSaisonPage() {
                     />
                   </FormField>
 
-                  {/* STATUT */}
                   <FormField
                     label="Statut"
                     htmlFor="statusId"
@@ -535,7 +576,6 @@ export function AjouterSaisonPage() {
                     </select>
                   </FormField>
 
-                  {/* DATE DÉBUT */}
                   <FormField
                     label="Date de début"
                     htmlFor="beginDate"
@@ -553,7 +593,6 @@ export function AjouterSaisonPage() {
                     />
                   </FormField>
 
-                  {/* DATE FIN */}
                   <FormField
                     label="Date de fin"
                     htmlFor="endDate"
@@ -574,10 +613,9 @@ export function AjouterSaisonPage() {
                 </div>
               </section>
 
-              {/* SÉPARATEUR */}
               <div className="border-t border-dashed border-slate-200" />
 
-              {/* SECTION 2 : TARIFICATION */}
+              {/* TARIFICATION */}
               <section>
                 <div className="mb-5 flex items-center gap-3">
                   <div className="flex size-9 items-center justify-center rounded-xl bg-amber-50 text-amber-600">
@@ -588,7 +626,6 @@ export function AjouterSaisonPage() {
                     <h3 className="text-sm font-bold text-slate-800">
                       Tarification
                     </h3>
-
                     <p className="mt-0.5 text-xs text-slate-400">
                       Définissez les prix de production, d'achat et de vente.
                     </p>
@@ -596,7 +633,6 @@ export function AjouterSaisonPage() {
                 </div>
 
                 <div className="grid grid-cols-1 gap-x-6 gap-y-5 md:grid-cols-2">
-                  {/* PRIX KILO */}
                   <FormField
                     label="Prix de production d'un kilo d'olives"
                     htmlFor="priceKilo"
@@ -613,11 +649,10 @@ export function AjouterSaisonPage() {
                       onChange={handleChange}
                       placeholder="Ex. 0.80"
                       required
-                      className={`${unitInputClass} pl-11`}
+                      className={unitInputClass}
                     />
                   </FormField>
 
-                  {/* PRIX ACHAT */}
                   <FormField
                     label="Prix d'achat d'un litre d'huile"
                     htmlFor="priceAchat"
@@ -634,11 +669,10 @@ export function AjouterSaisonPage() {
                       onChange={handleChange}
                       placeholder="Ex. 18.00"
                       required
-                      className={`${unitInputClass} pl-11`}
+                      className={unitInputClass}
                     />
                   </FormField>
 
-                  {/* PRIX VENTE */}
                   <FormField
                     label="Prix de vente d'un litre d'huile"
                     htmlFor="priceVente"
@@ -655,16 +689,15 @@ export function AjouterSaisonPage() {
                       onChange={handleChange}
                       placeholder="Ex. 20.00"
                       required
-                      className={`${unitInputClass} pl-11`}
+                      className={unitInputClass}
                     />
                   </FormField>
                 </div>
               </section>
 
-              {/* SÉPARATEUR */}
               <div className="border-t border-dashed border-slate-200" />
 
-              {/* SECTION 3 : CAPACITÉ */}
+              {/* CAPACITÉ */}
               <section>
                 <div className="mb-5 flex items-center gap-3">
                   <div className="flex size-9 items-center justify-center rounded-xl bg-blue-50 text-blue-600">
@@ -675,7 +708,6 @@ export function AjouterSaisonPage() {
                     <h3 className="text-sm font-bold text-slate-800">
                       Capacité de stockage
                     </h3>
-
                     <p className="mt-0.5 text-xs text-slate-400">
                       Indiquez le nombre de caisses disponibles pour la saison.
                     </p>
@@ -719,7 +751,7 @@ export function AjouterSaisonPage() {
                   variant="outline"
                   onClick={handleCancel}
                   disabled={isSubmitting}
-                  className="h-11 min-w-[120px] gap-2 rounded-xl border-slate-200 bg-white px-5 font-semibold text-slate-600 shadow-sm transition hover:border-slate-300 hover:bg-slate-100"
+                  className="h-11 min-w-[120px] gap-2 rounded-xl border-slate-200 bg-white px-5 font-semibold text-slate-600 shadow-sm transition hover:bg-slate-100"
                 >
                   <X className="size-4" />
                   Annuler
@@ -728,7 +760,7 @@ export function AjouterSaisonPage() {
                 <Button
                   type="submit"
                   disabled={isSubmitting}
-                  className="h-11 min-w-[155px] gap-2 rounded-xl border border-[#465A27] bg-[#556B2F] px-6 font-semibold text-white shadow-[0_4px_12px_rgba(85,107,47,0.18)] transition-all hover:-translate-y-0.5 hover:bg-[#465A27] hover:shadow-md disabled:translate-y-0 disabled:cursor-not-allowed disabled:opacity-60"
+                  className="h-11 min-w-[155px] gap-2 rounded-xl border border-[#465A27] bg-[#556B2F] px-6 font-semibold text-white shadow-sm transition hover:bg-[#465A27] disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   {isSubmitting ? (
                     <>
@@ -738,7 +770,9 @@ export function AjouterSaisonPage() {
                   ) : (
                     <>
                       <Save className="size-4" />
-                      Enregistrer la saison
+                      {isEdit
+                        ? 'Enregistrer les modifications'
+                        : 'Enregistrer la saison'}
                     </>
                   )}
                 </Button>
@@ -748,14 +782,11 @@ export function AjouterSaisonPage() {
         </form>
       </Container>
 
-      {/* =====================================================
-          MODAL DE SUCCÈS
-      ===================================================== */}
-
+      {/* MODAL DE SUCCÈS */}
       {showSuccessModal && (
         <div
           className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/40 px-4 py-6 backdrop-blur-[3px]"
-          onClick={handleCloseSuccess}
+          onClick={() => setShowSuccessModal(false)}
         >
           <div
             role="dialog"
@@ -766,7 +797,7 @@ export function AjouterSaisonPage() {
           >
             <button
               type="button"
-              onClick={handleCloseSuccess}
+              onClick={() => setShowSuccessModal(false)}
               className="absolute right-4 top-4 flex size-9 items-center justify-center rounded-xl text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
               aria-label="Fermer"
             >
@@ -788,11 +819,14 @@ export function AjouterSaisonPage() {
               id="success-title"
               className="mt-4 text-xl font-bold tracking-tight text-slate-800"
             >
-              Saison ajoutée !
+              {isEdit ? 'Saison modifiée !' : 'Saison ajoutée !'}
             </h2>
 
             <p className="mx-auto mt-2 max-w-[290px] text-sm leading-6 text-slate-500">
-              La nouvelle saison a été enregistrée avec succès. Vous pouvez maintenant consulter la liste des saisons.
+              {isEdit
+                ? 'Les modifications ont été enregistrées avec succès.'
+                : 'La nouvelle saison a été enregistrée avec succès.'}
+              {' '}Vous pouvez maintenant consulter la liste des saisons.
             </p>
 
             <div className="mt-7 flex flex-col gap-3">
@@ -807,7 +841,7 @@ export function AjouterSaisonPage() {
 
               <button
                 type="button"
-                onClick={handleCloseSuccess}
+                onClick={() => setShowSuccessModal(false)}
                 className="py-2 text-sm font-medium text-slate-500 transition hover:text-slate-800"
               >
                 Rester sur cette page

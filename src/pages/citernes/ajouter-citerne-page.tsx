@@ -1,7 +1,8 @@
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { ChangeEvent, FormEvent } from "react";
-import { useNavigate } from "react-router-dom";
+import { citerneApi } from "@/services/citerne-api";
+import { useLocation, useNavigate } from "react-router-dom";
 import {
   ArrowLeft,
   CalendarDays,
@@ -21,7 +22,15 @@ import {
 import { Button } from "@/components/ui/button";
 import { Container } from "@/components/common/container";
 
-const API_URL = "/olive_app/citerne/save";
+interface Citerne {
+  citerneId: number;
+  reference: string;
+  libelle: string;
+  capacity: number;
+  dateFabrication: string;
+}
+
+const STORAGE_KEY = "olive_app_citernes";
 
 interface CiterneFormData {
   reference: string;
@@ -30,19 +39,48 @@ interface CiterneFormData {
   dateFabrication: string;
 }
 
+
 export function AjouterCiternePage() {
   const navigate = useNavigate();
 
-  const [formData, setFormData] = useState<CiterneFormData>({
-    reference: "",
-    name: "",
-    capacite: "",
-    dateFabrication: "",
-  });
+  
 
-  const [loading, setLoading] = useState(false);
-  const [errorMessage, setErrorMessage] = useState("");
-  const [showSuccessModal, setShowSuccessModal] = useState(false);
+
+
+const [formData, setFormData] = useState<CiterneFormData>({
+  reference: "",
+  name: "",
+  capacite: "",
+  dateFabrication: "",
+});
+
+const [loading, setLoading] = useState(false);
+const [errorMessage, setErrorMessage] = useState("");
+const [showSuccessModal, setShowSuccessModal] = useState(false);
+const location = useLocation();
+
+const citerne = (
+  location.state as { citerne?: Citerne } | null
+)?.citerne;
+
+const isEdit = Boolean(citerne);
+useEffect(() => {
+  if (citerne) {
+    setFormData({
+      reference: citerne.reference ?? "",
+      name: citerne.libelle ?? "",
+      capacite: String(citerne.capacity ?? ""),
+      dateFabrication: citerne.dateFabrication?.slice(0, 10) ?? "",
+    });
+  } else {
+    setFormData({
+      reference: "",
+      name: "",
+      capacite: "",
+      dateFabrication: "",
+    });
+  }
+}, [citerne]);
 
   const handleChange = (event: ChangeEvent<HTMLInputElement>) => {
     const { name, value } = event.target;
@@ -59,107 +97,66 @@ export function AjouterCiternePage() {
     navigate("/store-admin/tanks");
   };
 
-  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    setErrorMessage("");
+  
+const handleSubmit = async (
+  event: FormEvent<HTMLFormElement>,
+) => {
+  event.preventDefault();
+  setErrorMessage("");
 
-    const reference = formData.reference.trim();
-    const name = formData.name.trim();
-    const capacite = Number(formData.capacite);
+  const reference = formData.reference.trim();
+  const name = formData.name.trim();
+  const capacity = Number(formData.capacite);
 
-    if (!reference || !name || !formData.dateFabrication) {
-      setErrorMessage(
-        "Veuillez remplir tous les champs obligatoires."
-      );
-      return;
-    }
+  if (!reference || !name || !formData.dateFabrication) {
+    setErrorMessage("Veuillez remplir tous les champs obligatoires.");
+    return;
+  }
 
-    if (!Number.isFinite(capacite) || capacite <= 0) {
-      setErrorMessage(
-        "La capacité doit être un nombre supérieur à zéro."
-      );
-      return;
-    }
+  if (!Number.isFinite(capacity) || capacity <= 0) {
+    setErrorMessage("La capacité doit être supérieure à zéro.");
+    return;
+  }
 
+  setLoading(true);
+
+  try {
     const payload = {
+      ...(isEdit && citerne
+        ? { citerneId: citerne.citerneId }
+        : {}),
       reference,
-      name,
-      capacite,
-      dateFabrication: formData.dateFabrication,
+      libelle: name,
+      capacity,
+      createdDate: formData.dateFabrication,
+      searche: "",
     };
 
-    setLoading(true);
-
-    try {
-      const response = await fetch(API_URL, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Accept: "*/*",
-        },
-        body: JSON.stringify(payload),
-      });
-
-      const responseText = await response.text();
-
-      let responseData: unknown = null;
-
-      if (responseText) {
-        try {
-          responseData = JSON.parse(responseText);
-        } catch {
-          responseData = responseText;
-        }
-      }
-
-      if (!response.ok) {
-        let message = `Erreur HTTP ${response.status}.`;
-
-        if (
-          typeof responseData === "string" &&
-          responseData.trim()
-        ) {
-          message += ` ${responseData}`;
-        } else if (
-          typeof responseData === "object" &&
-          responseData !== null
-        ) {
-          const data = responseData as Record<string, unknown>;
-          const backendMessage =
-            data.message ??
-            data.detail ??
-            data.error ??
-            data.title;
-
-          if (backendMessage) {
-            message += ` ${String(backendMessage)}`;
-          }
-        }
-
-        throw new Error(message);
-      }
-
-      setShowSuccessModal(true);
-    } catch (error) {
-      console.error(
-        "Erreur lors de l'ajout de la citerne :",
-        error
-      );
-
-      setErrorMessage(
-        error instanceof Error
-          ? error.message
-          : "Une erreur inattendue est survenue."
-      );
-    } finally {
-      setLoading(false);
+    if (isEdit) {
+      await citerneApi.modifier(payload);
+    } else {
+      await citerneApi.ajouter(payload);
     }
-  };
+
+    setShowSuccessModal(true);
+  } catch (error) {
+    console.error("Erreur API citerne :", error);
+
+    setErrorMessage(
+      error instanceof Error
+        ? error.message
+        : "Impossible d'enregistrer la citerne.",
+    );
+  } finally {
+    setLoading(false);
+  }
+};
+
 
   const handleSuccess = () => {
-    setShowSuccessModal(false);
-    navigate("/store-admin/tanks");
-  };
+  setShowSuccessModal(false);
+  navigate("/store-admin/tanks");
+};
 
   return (
     <>
@@ -172,12 +169,14 @@ export function AjouterCiternePage() {
             <div className="flex flex-col justify-between gap-5 sm:flex-row sm:items-center">
               <div className="min-w-0">
                 <h1 className="text-3xl font-bold tracking-tight text-[#172033] sm:text-[34px]">
-                  Ajouter une citerne
-                </h1>
+  {isEdit ? "Modifier une citerne" : "Ajouter une citerne"}
+</h1>
 
-                <p className="mt-1.5 text-base leading-6 text-slate-500">
-                  Renseignez les informations de la nouvelle citerne.
-                </p>
+<p className="mt-1.5 text-base leading-6 text-slate-500">
+  {isEdit
+    ? "Modifiez les informations de la citerne sélectionnée."
+    : "Renseignez les informations de la nouvelle citerne."}
+</p>
               </div>
 
               
@@ -437,7 +436,11 @@ export function AjouterCiternePage() {
         <Save className="mr-2 size-4" />
       )}
 
-      {loading ? "Enregistrement..." : "Ajouter la citerne"}
+      {loading
+  ? "Enregistrement..."
+  : isEdit
+    ? "Enregistrer les modifications"
+    : "Ajouter la citerne"}
     </Button>
   </div>
 </div>
@@ -463,16 +466,15 @@ export function AjouterCiternePage() {
               <Check className="size-7" />
             </div>
 
-            <h2
-              id="success-title"
-              className="mt-5 text-xl font-bold text-[#172033]"
-            >
-              Citerne ajoutée !
-            </h2>
+            <h2 id="success-title" className="mt-5 text-xl font-bold text-[#172033]">
+  {isEdit ? "Citerne modifiée !" : "Citerne ajoutée !"}
+</h2>
 
-            <p className="mt-2 text-sm leading-6 text-slate-500">
-              La nouvelle citerne a été enregistrée avec succès.
-            </p>
+<p className="mt-2 text-sm leading-6 text-slate-500">
+  {isEdit
+    ? "Les modifications ont été enregistrées avec succès."
+    : "La nouvelle citerne a été enregistrée avec succès."}
+</p>
 
             <div className="mt-6 rounded-xl border border-slate-200 bg-slate-50 p-4 text-left">
               <div className="flex items-center justify-between gap-3 text-sm">

@@ -1,4 +1,5 @@
 
+
 import {
   BarChart3,
   BriefcaseBusiness,
@@ -26,14 +27,12 @@ import {
 import { type MenuConfig } from './types';
 
 export const MENU_SIDEBAR: MenuConfig = [
-  // Tableau de bord
   {
     title: 'Tableau de bord',
     icon: Home,
     path: '/store-admin/dashboard',
   },
 
-  // 1. PARAMÉTRAGE
   {
     title: 'Paramétrage',
     icon: Settings,
@@ -61,7 +60,6 @@ export const MENU_SIDEBAR: MenuConfig = [
     ],
   },
 
-  // 2. SÉCURITÉ
   {
     title: 'Sécurité',
     icon: ShieldCheck,
@@ -80,52 +78,48 @@ export const MENU_SIDEBAR: MenuConfig = [
   },
 
   {
-  title: 'Production',
-  icon: Factory,
-  children: [
-    {
-      title: 'Saison',
-      icon: CalendarDays,
-      path: '/store-admin/saison',
-    },
-    {
-      title: 'Compte',
-      icon: BriefcaseBusiness,
-      path: '/store-admin/accounts',
-    },
-    {
-      title: 'Bon de réception',
-      icon: FileText,
-      path: '/store-admin/reception-vouchers',
-    },
-    {
-      title: 'Traitement des bases',
-      icon: Settings,
-      path: '/store-admin/base-processing',
-    },
-    {
-      title: 'Vente huile',
-      icon: ShoppingCart,
-      path: '/store-admin/oil-sales',
-    },
-    {
-      title: 'Achat huile',
-      icon: Droplet,
-      path: '/store-admin/oil-purchases',
-    },
-  ],
-},
-
-  // 4. TRÉSORERIE
-  {
-    title: 'Trésorerie',
-    icon: Wallet,
+    title: 'Production',
+    icon: Factory,
     children: [
-      // Ajouter ici les sous-menus de trésorerie.
+      {
+        title: 'Saison',
+        icon: CalendarDays,
+        path: '/store-admin/saison',
+      },
+      {
+        title: 'Compte',
+        icon: BriefcaseBusiness,
+        path: '/store-admin/accounts',
+      },
+      {
+        title: 'Bon de réception',
+        icon: FileText,
+        path: '/store-admin/reception-vouchers',
+      },
+      {
+        title: 'Traitement des bases',
+        icon: Settings,
+        path: '/store-admin/base-processing',
+      },
+      {
+        title: 'Vente huile',
+        icon: ShoppingCart,
+        path: '/store-admin/oil-sales',
+      },
+      {
+        title: 'Achat huile',
+        icon: Droplet,
+        path: '/store-admin/oil-purchases',
+      },
     ],
   },
 
-  // 5. GESTION ADMINISTRATIVE
+  {
+    title: 'Trésorerie',
+    icon: Wallet,
+    children: [],
+  },
+
   {
     title: 'Gestion Administrative',
     icon: ClipboardList,
@@ -158,13 +152,10 @@ export const MENU_SIDEBAR: MenuConfig = [
     ],
   },
 
-  // 6. ÉDITION ET STATISTIQUES
   {
     title: 'Édition et statistiques',
     icon: BarChart3,
-    children: [
-      // Ajouter ici les sous-menus des statistiques.
-    ],
+    children: [],
   },
 ];
 

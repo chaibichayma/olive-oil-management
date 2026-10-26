@@ -321,12 +321,14 @@ export function CiternePage() {
   }, [citernes]);
 
   const handleAdd = () => {
-    navigate("/store-admin/tanks/add");
-  };
+  navigate("/store-admin/tanks/ajouter");
+};
 
   const handleEdit = (citerne: Citerne) => {
-    navigate(`/store-admin/tanks/edit/${citerne.citerneId}`);
-  };
+  navigate("/store-admin/tanks/ajouter", {
+    state: { citerne },
+  });
+};
 
   const handleDelete = (citerne: Citerne) => {
     setCiterneToDelete(citerne as CiterneWithVolume);
@@ -523,12 +525,10 @@ export function CiternePage() {
         )}
 
         <CiterneTable
-          citernes={citernes}
-          loading={loading}
-          onEdit={handleEdit}
-          onDelete={handleDelete}
-          onRefresh={() => void loadCiternes()}
-        />
+  citernes={citernes}
+  onEdit={handleEdit}
+  onDelete={handleDelete}
+/>
       </Container>
 
       {/* Confirmation de suppression */}
