@@ -1,21 +1,26 @@
+
 import { AuthRouting } from '@/auth/auth-routing';
 import { RequireAuth } from '@/auth/require-auth';
 import { ErrorRouting } from '@/errors/error-routing';
 import { Demo1Layout } from '@/layouts/demo1/layout';
-import {
-  BonReceptionPage
-} from '@/pages/bon-reception';
+
+import { BonReceptionPage } from '@/pages/bon-reception';
 import BonReceptionFormPage from '@/pages/bon-reception/BonReceptionFormPage';
+
 import { AjouterCiternePage, CiternePage } from '@/pages/citernes';
-import { ComptePage, AjouterComptePage} from '@/pages/comptes';
-import { AjouterOuvrierPage} from '@/pages/ouvriers';
+import { ComptePage, AjouterComptePage } from '@/pages/comptes';
+import OilPurchasesPage from '@/pages/OilPurchasesPage';
+import OilSalesPage from '@/pages/OilSalesPage';
+import { AjouterOuvrierPage } from '@/pages/ouvriers';
 import { OuvrierPage } from '@/pages/ouvriers/ouvrier-page';
 import { WorkerPlanningsPage } from '@/pages/plannings-ouvriers';
 import { AjouterSaisonPage, SaisonPage } from '@/pages/saison';
-
 import { DashboardPage } from '@/pages/store-admin';
-import { TraitementBasesPage } from '@/pages/traitement-bases/traitement-bases-page';
-import { UtilisateurPage, AjouterUtilisateurPage} from '@/pages/utilisateurs';
+import DepartementsPage from '@/pages/store-admin/DepartementsPage';
+import FunctionsPage from '@/pages/store-admin/FunctionsPage';
+import RubriquesPage from '@/pages/store-admin/RubriquesPage';
+import TraitementBasesPage from '@/pages/traitement-bases/traitement-bases-page';
+import { UtilisateurPage, AjouterUtilisateurPage } from '@/pages/utilisateurs';
 import { VenteHuilePage } from '@/pages/vente-huile/vente-huile-page';
 
 import { Navigate, Route, Routes } from 'react-router';
@@ -23,9 +28,9 @@ import { Navigate, Route, Routes } from 'react-router';
 export function AppRoutingSetup() {
   return (
     <Routes>
+      {/* Authentification et espace administrateur */}
       <Route element={<RequireAuth />}>
         <Route element={<Demo1Layout />}>
-
           <Route
             path="/"
             element={
@@ -36,95 +41,129 @@ export function AppRoutingSetup() {
             }
           />
 
+          {/* Tableau de bord */}
           <Route
             path="/store-admin/dashboard"
             element={<DashboardPage />}
           />
 
+          {/* Saisons */}
           <Route
-  path="/store-admin/saison"
-  element={<SaisonPage />}
-/>
+            path="/store-admin/saison"
+            element={<SaisonPage />}
+          />
+          <Route
+            path="/store-admin/saison/ajouter"
+            element={<AjouterSaisonPage />}
+          />
 
-<Route
-  path="/store-admin/saison/ajouter"
-  element={<AjouterSaisonPage />}
-/>
+          {/* Citernes */}
+          <Route
+            path="/store-admin/tanks"
+            element={<CiternePage />}
+          />
+          <Route
+            path="/store-admin/tanks/ajouter"
+            element={<AjouterCiternePage />}
+          />
 
-<Route
-  path="/store-admin/tanks"
-  element={<CiternePage />}
-/>
-<Route
-  path="/store-admin/tanks/ajouter"
-  element={<AjouterCiternePage />}
-/>
-<Route
-  path="/store-admin/users"
-  element={<UtilisateurPage />}
-/>
-<Route
-  path="/store-admin/users/ajouter"
-  element={<AjouterUtilisateurPage />}
-/>
+          {/* Utilisateurs */}
+          <Route
+            path="/store-admin/users"
+            element={<UtilisateurPage />}
+          />
+          <Route
+            path="/store-admin/users/ajouter"
+            element={<AjouterUtilisateurPage />}
+          />
 
-<Route
-  path="/store-admin/accounts"
-  element={<ComptePage />}
-/>
-<Route
-  path="/store-admin/accounts/form"
-  element={<AjouterComptePage />}
-/>
+          {/* Comptes */}
+          <Route
+            path="/store-admin/accounts"
+            element={<ComptePage />}
+          />
+          <Route
+            path="/store-admin/accounts/form"
+            element={<AjouterComptePage />}
+          />
 
-<Route
+          {/* Ouvriers */}
+          <Route
             path="/store-admin/workers"
-            element={
-              <OuvrierPage />
-            }
+            element={<OuvrierPage />}
+          />
+          <Route
+            path="/store-admin/workers/form"
+            element={<AjouterOuvrierPage />}
+          />
+          <Route
+            path="/store-admin/worker-plannings"
+            element={<WorkerPlanningsPage />}
+          />
+
+          {/* Bons de réception */}
+          <Route
+            path="/store-admin/reception-vouchers"
+            element={<BonReceptionPage />}
+          />
+          <Route
+            path="/store-admin/reception-vouchers/add"
+            element={<BonReceptionFormPage mode="add" />}
+          />
+          <Route
+            path="/store-admin/reception-vouchers/edit/:id"
+            element={<BonReceptionFormPage mode="edit" />}
+          />
+
+          {/* Traitement de base */}
+          <Route
+            path="/store-admin/traitement-bases"
+            element={<TraitementBasesPage />}
           />
 
           <Route
-  path="/store-admin/workers/form"
-  element={<AjouterOuvrierPage />}
+  path="/store-admin/functions"
+  element={<FunctionsPage />}
 />
+
+<Route
+  path="/store-admin/departements"
+  element={<DepartementsPage />}
+/>
+<Route
+  path="/store-admin/rubrics"
+  element={<RubriquesPage />}
+/>
+
+<Route
+  path="/store-admin/oil-sales"
+  element={<OilSalesPage />}
+/>
+
+<Route
+  path="/store-admin/oil-purchases"
+  element={<OilPurchasesPage />}
+/>
+
+          {/* Vente d'huile */}
           <Route
-  path="/store-admin/worker-plannings"
-  element={<WorkerPlanningsPage />}
-/>
-<Route
-  path="/store-admin/reception-vouchers"
-  element={<BonReceptionPage />}
-/>
-
-<Route
-  path="/store-admin/base-processing"
-  element={<TraitementBasesPage />}
-/>
-
-<Route
-  path="/store-admin/reception-vouchers/add"
-  element={<BonReceptionFormPage mode="add" />}
-/>
-
-<Route
-  path="/store-admin/reception-vouchers/edit/:id"
-  element={<BonReceptionFormPage mode="edit" />}
-/>
-
+            path="/store-admin/oil-sales"
+            element={<VenteHuilePage />}
+          />
         </Route>
       </Route>
 
+      {/* Routes publiques */}
       <Route
         path="auth/*"
         element={<AuthRouting />}
       />
-
       <Route
         path="error/*"
         element={<ErrorRouting />}
       />
 
+      {/* Page introuvable */}
       <Route
         path="*"
         element={
@@ -134,10 +173,6 @@ export function AppRoutingSetup() {
           />
         }
       />
-      <Route
-  path="/store-admin/oil-sales"
-  element={<VenteHuilePage />}
-/>
     </Routes>
   );
 }

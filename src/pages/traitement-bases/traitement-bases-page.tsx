@@ -1,248 +1,372 @@
 
 import { useMemo, useState } from 'react';
+import type { ReactNode } from 'react';
 import {
-  CalendarDays,
+  Building2,
+  Check,
   ChevronDown,
   ChevronLeft,
   ChevronRight,
   ChevronsUpDown,
-  Coins,
+  ClipboardList,
   Download,
-  Droplet,
+  Eye,
   FileText,
+  Filter,
   Leaf,
-  Plus,
+  Phone,
+  RefreshCw,
   RotateCcw,
   Search,
+  SlidersHorizontal,
   UserRound,
+  Users,
+  WalletCards,
   X,
 } from 'lucide-react';
 
-type TraitementBase = {
+type Compte = {
   id: number;
-  date: string;
-  poidsOlive: number;
-  poidsHuile: number;
-  typeHuile: string;
-  prixUnite: number;
-  observation: string;
+  nom: string;
+  telephone: string;
+  numero: string;
+  type: 'Client' | 'Fournisseur';
 };
 
-const DONNEES_INITIALES: TraitementBase[] = [
-  {
-    id: 1,
-    date: '02/10/2026',
-    poidsOlive: 850,
-    poidsHuile: 165,
-    typeHuile: 'Vierge extra',
-    prixUnite: 7.5,
-    observation: 'Lot A-12',
-  },
-  {
-    id: 2,
-    date: '05/10/2026',
-    poidsOlive: 1200,
-    poidsHuile: 238,
-    typeHuile: 'Vierge',
-    prixUnite: 7,
-    observation: 'Traitement terminé',
-  },
-  {
-    id: 3,
-    date: '08/10/2026',
-    poidsOlive: 640,
-    poidsHuile: 121,
-    typeHuile: 'Lampante',
-    prixUnite: 6.5,
-    observation: 'Contrôle qualité validé',
-  },
-  {
-    id: 4,
-    date: '12/10/2026',
-    poidsOlive: 950,
-    poidsHuile: 182,
-    typeHuile: 'Vierge extra',
-    prixUnite: 7.8,
-    observation: 'Lot B-03',
-  },
-  {
-    id: 5,
-    date: '15/10/2026',
-    poidsOlive: 1430,
-    poidsHuile: 275,
-    typeHuile: 'Vierge',
-    prixUnite: 7.2,
-    observation: 'Traitement terminé',
-  },
-  {
-    id: 6,
-    date: '18/10/2026',
-    poidsOlive: 780,
-    poidsHuile: 150,
-    typeHuile: 'Lampante',
-    prixUnite: 6.8,
-    observation: 'En attente de contrôle',
-  },
-  {
-    id: 7,
-    date: '22/10/2026',
-    poidsOlive: 1050,
-    poidsHuile: 199,
-    typeHuile: 'Vierge extra',
-    prixUnite: 7.6,
-    observation: 'Lot C-07',
-  },
+type BonReception = {
+  id: number;
+  reference: string;
+  compteId: number;
+  date: string;
+  typeHuile: string;
+  quantiteOlives: number;
+  quantiteHuile: number;
+  montant: number;
+  statut: 'Traité' | 'En cours' | 'En attente';
+};
+
+const TYPES_HUILE = [
+  "Huile d'olive",
+  'Huile vierge extra',
+  'Huile vierge',
+  'Lampante',
 ];
 
-const NOMBRE_OPERATIONS = 24;
-const PAGE_SIZE = 7;
+const COMPTES: Compte[] = [
+  { id: 1, nom: 'Coopérative de Sousse', telephone: '+216 73 210 456', numero: 'CPT-001', type: 'Fournisseur' },
+  { id: 2, nom: 'Société El Oliva', telephone: '+216 98 123 456', numero: 'CPT-002', type: 'Client' },
+  { id: 3, nom: 'Agriplus', telephone: '+216 55 678 912', numero: 'CPT-003', type: 'Fournisseur' },
+  { id: 4, nom: 'Mohamed Ben Salem', telephone: '+216 22 345 678', numero: 'CPT-004', type: 'Client' },
+  { id: 5, nom: 'Med Oil', telephone: '+216 71 987 654', numero: 'CPT-005', type: 'Client' },
+  { id: 6, nom: 'Coopérative Mahdia', telephone: '+216 29 111 222', numero: 'CPT-006', type: 'Fournisseur' },
+  { id: 7, nom: 'Karim Trabelsi', telephone: '+216 50 333 444', numero: 'CPT-007', type: 'Client' },
+  { id: 8, nom: 'Export Olive SARL', telephone: '+216 28 765 432', numero: 'CPT-008', type: 'Fournisseur' },
+];
 
-const TYPES_HUILE = ['Vierge extra', 'Vierge', 'Lampante'];
+const BONS_INITIAUX: BonReception[] = [
+  { id: 1, reference: 'BR-001', compteId: 1, date: '2024-10-12', typeHuile: "Huile d'olive", quantiteOlives: 1250, quantiteHuile: 250, montant: 1500, statut: 'Traité' },
+  { id: 2, reference: 'BR-002', compteId: 2, date: '2024-10-15', typeHuile: 'Huile vierge extra', quantiteOlives: 980, quantiteHuile: 210, montant: 1230, statut: 'En cours' },
+  { id: 3, reference: 'BR-003', compteId: 3, date: '2024-10-18', typeHuile: 'Huile vierge', quantiteOlives: 1500, quantiteHuile: 300, montant: 1850, statut: 'En attente' },
+  { id: 4, reference: 'BR-004', compteId: 1, date: '2024-10-20', typeHuile: "Huile d'olive", quantiteOlives: 1100, quantiteHuile: 230, montant: 1420, statut: 'Traité' },
+  { id: 5, reference: 'BR-005', compteId: 4, date: '2024-10-22', typeHuile: 'Huile vierge extra', quantiteOlives: 950, quantiteHuile: 205, montant: 1280, statut: 'En cours' },
+  { id: 6, reference: 'BR-006', compteId: 5, date: '2024-10-23', typeHuile: 'Huile vierge', quantiteOlives: 1320, quantiteHuile: 275, montant: 1720, statut: 'Traité' },
+  { id: 7, reference: 'BR-007', compteId: 6, date: '2024-10-24', typeHuile: 'Lampante', quantiteOlives: 870, quantiteHuile: 165, montant: 990, statut: 'En attente' },
+  { id: 8, reference: 'BR-008', compteId: 7, date: '2024-10-25', typeHuile: 'Huile vierge extra', quantiteOlives: 1150, quantiteHuile: 240, montant: 1640, statut: 'En cours' },
+  { id: 9, reference: 'BR-009', compteId: 8, date: '2024-10-26', typeHuile: "Huile d'olive", quantiteOlives: 1420, quantiteHuile: 295, montant: 1980, statut: 'Traité' },
+];
 
-function calculerPrixTotal(item: TraitementBase) {
-  return item.poidsHuile * item.prixUnite;
+const inputClass =
+  'w-full rounded-lg border border-[#e0e5dc] bg-white px-3 py-2.5 text-xs text-[#344054] outline-none transition placeholder:text-[#98a2b3] hover:border-[#cbd5c0] focus:border-[#71843d] focus:ring-2 focus:ring-[#71843d]/10';
+
+function formatNumber(value: number) {
+  return value.toLocaleString('fr-FR', { maximumFractionDigits: 2 });
 }
 
-function formaterNombre(value: number) {
+function formatDate(date: string) {
+  return new Date(`${date}T12:00:00`).toLocaleDateString('fr-FR');
+}
+
+function formatMoney(value: number) {
   return value.toLocaleString('fr-FR', {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   });
 }
 
-function convertirDate(date: string) {
-  const [jour, mois, annee] = date.split('/');
-  return new Date(Number(annee), Number(mois) - 1, Number(jour));
-}
+function StatusBadge({ status }: { status: BonReception['statut'] }) {
+  const styles: Record<BonReception['statut'], string> = {
+    Traité: 'bg-[#dff1df] text-[#28723a]',
+    'En cours': 'bg-[#dcecff] text-[#1764bd]',
+    'En attente': 'bg-[#fff0cc] text-[#a86b08]',
+  };
 
-function creerDonneesDemo(): TraitementBase[] {
-  const donnees = [...DONNEES_INITIALES];
-
-  for (let i = donnees.length; i < NOMBRE_OPERATIONS; i++) {
-    const modele = DONNEES_INITIALES[i % DONNEES_INITIALES.length];
-    const jour = 1 + ((i * 3 + 1) % 28);
-
-    donnees.push({
-      ...modele,
-      id: i + 1,
-      date: `${String(jour).padStart(2, '0')}/09/2026`,
-      poidsOlive: modele.poidsOlive + i * 10,
-      poidsHuile: modele.poidsHuile + i * 2,
-      observation: `Lot ${String.fromCharCode(65 + (i % 3))}-${String(
-        i + 1,
-      ).padStart(2, '0')}`,
-    });
-  }
-
-  return donnees.sort(
-    (a, b) => convertirDate(b.date).getTime() - convertirDate(a.date).getTime(),
+  return (
+    <span className={`inline-flex items-center whitespace-nowrap rounded-full px-2.5 py-1 text-[10px] font-semibold ${styles[status]}`}>
+      {status}
+    </span>
   );
 }
 
-export function TraitementBasesPage() {
-  const [traitements, setTraitements] =
-    useState<TraitementBase[]>(creerDonneesDemo);
+function SectionTitle({
+  icon,
+  title,
+  description,
+}: {
+  icon: ReactNode;
+  title: string;
+  description?: string;
+}) {
+  return (
+    <div className="flex min-w-0 items-center gap-3">
+      <div className="flex size-10 shrink-0 items-center justify-center rounded-xl border border-[#e3ead9] bg-[#edf3e5] text-[#556b2f]">
+        {icon}
+      </div>
+      <div className="min-w-0">
+        <h2 className="text-sm font-bold text-[#172b3d]">{title}</h2>
+        {description && (
+          <p className="mt-1 text-xs leading-5 text-[#778397]">{description}</p>
+        )}
+      </div>
+    </div>
+  );
+}
 
-  const [nomCompte, setNomCompte] = useState('Mohamed Ben Salem');
-  const [telephone, setTelephone] = useState('+216 22 345 678');
-  const [recherche, setRecherche] = useState('');
-  const [typeHuile, setTypeHuile] = useState('Tous les types d’huile');
+function FieldLabel({ children }: { children: ReactNode }) {
+  return (
+    <label className="mb-1.5 block text-[11px] font-semibold text-[#344054]">
+      {children}
+    </label>
+  );
+}
+
+function InfoCompte({
+  icon,
+  label,
+  value,
+  last = false,
+}: {
+  icon: ReactNode;
+  label: string;
+  value: string;
+  last?: boolean;
+}) {
+  return (
+    <div className={`flex min-w-0 items-center gap-3 ${!last ? 'xl:border-r xl:border-[#dce4d5] xl:pr-3' : ''}`}>
+      <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-[#edf2e6] text-[#556b2f]">
+        {icon}
+      </div>
+      <div className="min-w-0">
+        <p className="text-[10px] text-[#7b8795]">{label}</p>
+        <p className="mt-1 truncate text-xs font-semibold text-[#344054]">{value}</p>
+      </div>
+    </div>
+  );
+}
+
+function DetailItem({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-lg border border-[#e8ede3] bg-[#fbfcfa] p-3">
+      <p className="text-[10px] font-medium text-[#7b8795]">{label}</p>
+      <p className="mt-1.5 break-words text-sm font-semibold text-[#344054]">{value}</p>
+    </div>
+  );
+}
+
+export default function TraitementBasesPage() {
+  const [bons] = useState<BonReception[]>(BONS_INITIAUX);
+
+  const [typeHuile, setTypeHuile] = useState('');
+  const [compteId, setCompteId] = useState('');
+  const [telephone, setTelephone] = useState('');
+  const [numeroCompte, setNumeroCompte] = useState('');
+
+  const [rechercheLancee, setRechercheLancee] = useState(false);
+  const [messageErreur, setMessageErreur] = useState('');
+
+  const [dropdownComptesOuvert, setDropdownComptesOuvert] = useState(false);
+  const [rechercheCompte, setRechercheCompte] = useState('');
   const [page, setPage] = useState(1);
-  const [dateDebut, setDateDebut] = useState('2026-10-01');
-  const [dateFin, setDateFin] = useState('2026-10-24');
-  const [modalOuvert, setModalOuvert] = useState(false);
+  const [taillePage, setTaillePage] = useState(5);
+  const [selection, setSelection] = useState<number[]>([]);
+  const [rechercheTableau, setRechercheTableau] = useState('');
+  const [detailsBon, setDetailsBon] = useState<BonReception | null>(null);
 
-  const [nouveau, setNouveau] = useState({
-    date: '2026-10-24',
-    poidsOlive: '',
-    poidsHuile: '',
-    typeHuile: 'Vierge extra',
-    prixUnite: '',
-    observation: '',
-  });
+  const compteSelectionne = COMPTES.find(
+    (compte) => String(compte.id) === compteId,
+  );
 
-  const traitementsFiltres = useMemo(() => {
-    return traitements.filter((item) => {
+  const comptesFiltres = useMemo(() => {
+    const q = rechercheCompte.trim().toLowerCase();
+
+    return COMPTES.filter((compte) =>
+      !q ||
+      compte.nom.toLowerCase().includes(q) ||
+      compte.telephone.toLowerCase().includes(q) ||
+      compte.numero.toLowerCase().includes(q) ||
+      compte.type.toLowerCase().includes(q)
+    );
+  }, [rechercheCompte]);
+
+  // Un type d'huile ET un numéro de compte ou un téléphone sont obligatoires.
+  const criteresComplets =
+    Boolean(typeHuile) && Boolean(numeroCompte || telephone);
+
+  const bonsFiltres = useMemo(() => {
+    // Ne jamais afficher les bons avant une recherche valide.
+    if (!rechercheLancee || !criteresComplets) {
+      return [];
+    }
+
+    const recherche = rechercheTableau.trim().toLowerCase();
+
+    return bons.filter((bon) => {
+      const compte = COMPTES.find((c) => c.id === bon.compteId);
+
+      const correspondType = bon.typeHuile === typeHuile;
+
+      const correspondCompte =
+        !compteId || bon.compteId === Number(compteId);
+
+      const correspondTelephone =
+        !telephone || compte?.telephone === telephone;
+
+      const correspondNumero =
+        !numeroCompte || compte?.numero === numeroCompte;
+
       const texte = [
-        item.date,
-        item.typeHuile,
-        item.observation,
-        String(item.poidsOlive),
-        String(item.poidsHuile),
-      ]
-        .join(' ')
-        .toLowerCase();
+        bon.reference,
+        bon.typeHuile,
+        bon.statut,
+        bon.date,
+        compte?.nom ?? '',
+        compte?.numero ?? '',
+        compte?.telephone ?? '',
+      ].join(' ').toLowerCase();
 
-      const correspondRecherche = texte.includes(recherche.toLowerCase());
+      const correspondRecherche =
+        !recherche || texte.includes(recherche);
 
-      const correspondType =
-        typeHuile === 'Tous les types d’huile' ||
-        item.typeHuile === typeHuile;
-
-      const dateItem = convertirDate(item.date);
-      const debut = dateDebut ? new Date(`${dateDebut}T00:00:00`) : null;
-      const fin = dateFin ? new Date(`${dateFin}T23:59:59`) : null;
-
-      const correspondDate =
-        (!debut || dateItem >= debut) && (!fin || dateItem <= fin);
-
-      return correspondRecherche && correspondType && correspondDate;
+      return (
+        correspondType &&
+        correspondCompte &&
+        correspondTelephone &&
+        correspondNumero &&
+        correspondRecherche
+      );
     });
-  }, [traitements, recherche, typeHuile, dateDebut, dateFin]);
+  }, [
+    bons,
+    rechercheLancee,
+    criteresComplets,
+    typeHuile,
+    compteId,
+    telephone,
+    numeroCompte,
+    rechercheTableau,
+  ]);
 
   const nombrePages = Math.max(
     1,
-    Math.ceil(traitementsFiltres.length / PAGE_SIZE),
+    Math.ceil(bonsFiltres.length / taillePage),
   );
 
-  const traitementsAffiches = traitementsFiltres.slice(
-    (page - 1) * PAGE_SIZE,
-    page * PAGE_SIZE,
+  const bonsAffiches = bonsFiltres.slice(
+    (page - 1) * taillePage,
+    page * taillePage,
   );
 
-  const totalOlives = traitements.reduce(
-    (total, item) => total + item.poidsOlive,
-    0,
-  );
+  const toutSelectionne =
+    bonsAffiches.length > 0 &&
+    bonsAffiches.every((bon) => selection.includes(bon.id));
 
-  const totalHuile = traitements.reduce(
-    (total, item) => total + item.poidsHuile,
-    0,
-  );
-
-  const montantTotal = traitements.reduce(
-    (total, item) => total + calculerPrixTotal(item),
-    0,
-  );
-
-  function reinitialiserFiltres() {
-    setRecherche('');
-    setTypeHuile('Tous les types d’huile');
-    setDateDebut('');
-    setDateFin('');
+  function modifierFiltre(callback: () => void) {
+    callback();
+    setRechercheLancee(false);
+    setMessageErreur('');
     setPage(1);
+    setSelection([]);
+  }
+
+  function appliquerRecherche() {
+    if (!typeHuile) {
+      setRechercheLancee(false);
+      setMessageErreur("Veuillez sélectionner un type d’huile.");
+      return;
+    }
+
+    if (!numeroCompte && !telephone) {
+      setRechercheLancee(false);
+      setMessageErreur(
+        'Veuillez sélectionner un numéro de compte ou un téléphone.',
+      );
+      return;
+    }
+
+    setMessageErreur('');
+    setRechercheLancee(true);
+    setPage(1);
+    setSelection([]);
+    setDropdownComptesOuvert(false);
+  }
+
+  function choisirCompte(compte: Compte) {
+    setCompteId(String(compte.id));
+    setTelephone(compte.telephone);
+    setNumeroCompte(compte.numero);
+    setRechercheCompte('');
+    setDropdownComptesOuvert(false);
+    setRechercheLancee(false);
+    setMessageErreur('');
+    setPage(1);
+    setSelection([]);
+  }
+
+  function reinitialiser() {
+    setTypeHuile('');
+    setCompteId('');
+    setTelephone('');
+    setNumeroCompte('');
+    setRechercheCompte('');
+    setRechercheTableau('');
+    setRechercheLancee(false);
+    setMessageErreur('');
+    setDropdownComptesOuvert(false);
+    setPage(1);
+    setSelection([]);
   }
 
   function exporterCSV() {
+    if (bonsFiltres.length === 0) return;
+
     const entetes = [
-      'Date',
-      'Poids olive (kg)',
-      'Poids huile (L)',
+      'Référence',
+      'Nom du compte',
+      'Téléphone',
+      'Numéro de compte',
+      'Date de réception',
       "Type d'huile",
-      'Prix unite (DT)',
-      'Prix total (DT)',
-      'Observation',
+      "Quantité d'olives (kg)",
+      "Quantité d'huile (kg)",
+      'Montant (DT)',
+      'Statut',
     ];
 
-    const lignes = traitementsFiltres.map((item) => [
-      item.date,
-      item.poidsOlive,
-      item.poidsHuile,
-      item.typeHuile,
-      item.prixUnite,
-      calculerPrixTotal(item).toFixed(2),
-      item.observation,
-    ]);
+    const lignes = bonsFiltres.map((bon) => {
+      const compte = COMPTES.find((c) => c.id === bon.compteId);
+
+      return [
+        bon.reference,
+        compte?.nom ?? '',
+        compte?.telephone ?? '',
+        compte?.numero ?? '',
+        formatDate(bon.date),
+        bon.typeHuile,
+        bon.quantiteOlives,
+        bon.quantiteHuile,
+        bon.montant.toFixed(2),
+        bon.statut,
+      ];
+    });
 
     const contenu = [entetes, ...lignes]
       .map((ligne) =>
@@ -259,671 +383,575 @@ export function TraitementBasesPage() {
     const url = URL.createObjectURL(blob);
     const lien = document.createElement('a');
     lien.href = url;
-    lien.download = 'historique-traitement-bases.csv';
+    lien.download = 'bons-reception-traitement.csv';
+    document.body.appendChild(lien);
     lien.click();
+    lien.remove();
     URL.revokeObjectURL(url);
   }
 
-  function ajouterTraitement(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-
-    const poidsOlive = Number(nouveau.poidsOlive);
-    const poidsHuile = Number(nouveau.poidsHuile);
-    const prixUnite = Number(nouveau.prixUnite);
-
-    if (
-      !nouveau.date ||
-      !Number.isFinite(poidsOlive) ||
-      !Number.isFinite(poidsHuile) ||
-      !Number.isFinite(prixUnite) ||
-      poidsOlive <= 0 ||
-      poidsHuile <= 0 ||
-      prixUnite < 0
-    ) {
-      return;
-    }
-
-    const [annee, mois, jour] = nouveau.date.split('-');
-
-    const traitement: TraitementBase = {
-      id: Date.now(),
-      date: `${jour}/${mois}/${annee}`,
-      poidsOlive,
-      poidsHuile,
-      typeHuile: nouveau.typeHuile,
-      prixUnite,
-      observation: nouveau.observation.trim() || 'Aucune observation',
-    };
-
-    setTraitements((precedents) => [traitement, ...precedents]);
-    setRecherche('');
-    setTypeHuile('Tous les types d’huile');
-    setDateDebut('');
-    setDateFin('');
-    setPage(1);
-    setModalOuvert(false);
-
-    setNouveau({
-      date: '2026-10-24',
-      poidsOlive: '',
-      poidsHuile: '',
-      typeHuile: 'Vierge extra',
-      prixUnite: '',
-      observation: '',
-    });
+  function basculerSelection(id: number) {
+    setSelection((ancienne) =>
+      ancienne.includes(id)
+        ? ancienne.filter((item) => item !== id)
+        : [...ancienne, id],
+    );
   }
 
-  const champClass =
-    'w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-[#71843d] focus:ring-2 focus:ring-[#71843d]/10';
+  function basculerToutesLesSelections() {
+    if (toutSelectionne) {
+      const idsPage = bonsAffiches.map((bon) => bon.id);
+      setSelection((ancienne) =>
+        ancienne.filter((id) => !idsPage.includes(id)),
+      );
+    } else {
+      setSelection((ancienne) =>
+        Array.from(
+          new Set([...ancienne, ...bonsAffiches.map((bon) => bon.id)]),
+        ),
+      );
+    }
+  }
+
+  function actualiser() {
+    setPage(1);
+    setSelection([]);
+  }
 
   return (
-    <div className="min-h-full  p-4 text-slate-800 sm:p-5 lg:p-6">
-      <div className="mx-auto flex w-full max-w-[1600px] flex-col gap-4">
+    <div className="min-h-full bg-[#f7f9f5] p-3 text-[#243247] sm:p-5 lg:p-6">
+      <div className="mx-auto flex w-full max-w-[1600px] flex-col gap-3.5">
+
         {/* En-tête */}
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div>
-            <h1 className="text-2xl font-bold tracking-tight text-slate-900">
-              Traitement des bases
-            </h1>
-            <p className="mt-1 text-sm text-slate-500">
-              Suivi des opérations de traitement et de production d’huile.
-            </p>
+        <header className="relative overflow-hidden rounded-xl border border-[#e4e9dd] bg-gradient-to-r from-white via-[#fbfcf8] to-[#eff4e6] px-5 py-4 shadow-[0_2px_8px_rgba(28,43,20,0.03)] sm:px-6 sm:py-5">
+          <div className="pointer-events-none absolute -right-5 -top-10 size-40 rounded-full border border-[#e3ead8]" />
+          <div className="pointer-events-none absolute -right-1 -top-5 size-28 rounded-full border border-[#e3ead8]" />
+
+          <div className="relative flex flex-wrap items-center justify-between gap-4">
+            <div className="flex min-w-0 items-center gap-4">
+              <div className="flex size-12 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[#839a4b] to-[#536b2d] text-white shadow-md shadow-[#556b2f]/15">
+                <Building2 size={25} strokeWidth={1.8} />
+              </div>
+              <div>
+                <h1 className="text-xl font-bold tracking-tight text-[#142e43] sm:text-2xl">
+                  Traitement de base
+                </h1>
+                <p className="mt-1 text-xs leading-5 text-[#687b90] sm:text-sm">
+                  Sélectionnez un type d’huile et un numéro de compte ou un téléphone pour consulter les bons de réception.
+                </p>
+              </div>
+            </div>
+
+            <span className="inline-flex items-center gap-2 rounded-full border border-[#dce6d1] bg-white/80 px-3 py-1.5 text-[10px] font-medium text-[#33452a]">
+              <span className="size-1.5 rounded-full bg-[#63823d]" />
+              Gestion de production
+            </span>
           </div>
+        </header>
 
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={() => setModalOuvert(true)}
-              className="inline-flex items-center gap-2 rounded-md bg-[#63782c] px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-[#526522]"
-            >
-              <Plus size={16} />
-              Nouveau traitement
-            </button>
+        {/* Critères */}
+        
+{/* Section des critères de recherche */}
+<section className="overflow-hidden rounded-2xl border border-[#e5e9df] bg-white shadow-[0_4px_18px_rgba(35,48,25,0.04)]">
 
-            <button
-              type="button"
-              onClick={exporterCSV}
-              className="inline-flex items-center gap-2 rounded-md border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
-            >
-              <Download size={16} />
-              Exporter
-            </button>
-          </div>
-        </div>
-
-        {/* Cartes statistiques */}
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
-          <StatCard
-            icon={<Leaf size={25} />}
-            label="Total olives traitées"
-            value={`${formaterNombre(totalOlives)} kg`}
-            iconClass="bg-[#edf2e2] text-[#718532]"
-            cardClass="border-[#e5ebdc] bg-[#fbfcf8]"
-          />
-
-          <StatCard
-            icon={<Droplet size={25} />}
-            label="Huile produite"
-            value={`${formaterNombre(totalHuile)} L`}
-            iconClass="bg-[#e6f0f8] text-[#4d99d5]"
-            cardClass="border-[#e0eaf2] bg-[#f9fbfd]"
-          />
-
-          <StatCard
-            icon={<Coins size={25} />}
-            label="Montant total"
-            value={`${formaterNombre(montantTotal)} DT`}
-            iconClass="bg-[#fff3df] text-[#c99516]"
-            cardClass="border-[#f0e7d9] bg-[#fffdfa]"
-          />
-
-          <StatCard
-            icon={<FileText size={25} />}
-            label="Opérations"
-            value={String(traitements.length)}
-            iconClass="bg-[#eee9fb] text-[#8571df]"
-            cardClass="border-[#e9e4f5] bg-[#fcfbff]"
-          />
-        </div>
-
-        {/* Informations du compte */}
-<section className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
   {/* En-tête */}
-  <div className="mb-4 flex items-center gap-2">
-    <UserRound size={19} className="text-[#63782c]" />
-    <h2 className="text-base font-bold text-slate-900">
-      Informations du compte
-    </h2>
+  <div className="flex flex-col gap-3 border-b border-[#edf0e8] bg-gradient-to-r from-[#f8faf5] to-white px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+    <div className="flex items-center gap-3">
+      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#eaf0df] text-[#586f32] ring-1 ring-inset ring-[#dce5ce]">
+        <Filter size={19} strokeWidth={2} />
+      </div>
+
+      <div>
+        <h2 className="text-sm font-bold tracking-tight text-[#26351d] sm:text-base">
+          Critères de recherche
+        </h2>
+        <p className="mt-1 text-xs leading-5 text-[#788071]">
+          Filtrez les bons de réception selon le type d’huile et le compte.
+        </p>
+      </div>
+    </div>
+
+    <div className="inline-flex w-fit items-center gap-2 rounded-full border border-[#e3e9d9] bg-white px-3 py-1.5">
+      <span className="h-1.5 w-1.5 rounded-full bg-[#718b48]" />
+      <span className="text-[11px] font-semibold text-[#586f32]">
+        Recherche par critères
+      </span>
+    </div>
   </div>
 
-  {/* Champs du compte */}
-  <div className="grid grid-cols-1 items-end gap-3 md:grid-cols-2 xl:grid-cols-[1.7fr_1fr_1.3fr]">
-    {/* Recherche du compte */}
-    <div>
-      <label className="mb-1.5 block text-xs font-medium text-slate-600">
-        Rechercher un compte par nom ou téléphone
-      </label>
+  {/* Champs de recherche */}
+  <div className="p-5 sm:p-6">
+    <div className="grid grid-cols-1 items-end gap-x-4 gap-y-5 md:grid-cols-2 xl:grid-cols-[1.05fr_1.5fr_1.05fr_auto]">
 
-      <div className="relative">
-        <Search
-          size={16}
-          className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500"
-        />
+      {/* Type d'huile */}
+      <div className="min-w-0">
+        <FieldLabel>Type d’huile <span className="text-red-500">*</span></FieldLabel>
 
-        <input
-          value={nomCompte}
-          onChange={(e) => {
-            setNomCompte(e.target.value);
-            setPage(1);
-          }}
-          className={`${champClass} pl-9 pr-9`}
-          placeholder="Nom du compte"
-        />
+        <div className="group relative mt-2">
+          <Leaf
+            size={17}
+            strokeWidth={1.8}
+            className="pointer-events-none absolute left-3.5 top-1/2 z-10 -translate-y-1/2 text-[#647b40] transition-colors group-focus-within:text-[#435624]"
+          />
 
-        {nomCompte && (
-          <button
-            type="button"
-            aria-label="Effacer le nom du compte"
-            onClick={() => {
-              setNomCompte('');
-              setPage(1);
+          <select
+            value={typeHuile}
+            onChange={(e) =>
+              modifierFiltre(() => setTypeHuile(e.target.value))
+            }
+            className="h-12 w-full appearance-none rounded-xl border border-[#dfe5d8] bg-[#fcfdfb] pl-10 pr-10 text-sm font-medium text-[#34412b] outline-none transition-all duration-200 hover:border-[#b9c7a8] focus:border-[#718746] focus:bg-white focus:ring-4 focus:ring-[#586f32]/10"
+          >
+            <option value="">Sélectionner un type</option>
+            {TYPES_HUILE.map((type) => (
+              <option key={type} value={type}>
+                {type}
+              </option>
+            ))}
+          </select>
+
+          <ChevronDown
+            size={16}
+            className="pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 text-[#7b8572]"
+          />
+        </div>
+      </div>
+
+      {/* Téléphone */}
+      <div className="min-w-0">
+        <FieldLabel>Téléphone <span className="text-red-500">*</span></FieldLabel>
+
+        <div className="group relative mt-2">
+          <Phone
+            size={17}
+            strokeWidth={1.8}
+            className="pointer-events-none absolute left-3.5 top-1/2 z-10 -translate-y-1/2 text-[#647b40] transition-colors group-focus-within:text-[#435624]"
+          />
+
+          <select
+            value={telephone}
+            onChange={(e) => {
+              const valeur = e.target.value;
+              const compte = COMPTES.find(
+                (c) => c.telephone === valeur,
+              );
+
+              modifierFiltre(() => {
+                setTelephone(valeur);
+                setCompteId(compte ? String(compte.id) : '');
+                setNumeroCompte(compte?.numero ?? '');
+              });
             }}
-            className="absolute right-8 top-1/2 -translate-y-1/2 text-slate-400 transition hover:text-slate-700"
+            className="h-12 w-full appearance-none rounded-xl border border-[#dfe5d8] bg-[#fcfdfb] pl-10 pr-10 text-sm font-medium text-[#34412b] outline-none transition-all duration-200 hover:border-[#b9c7a8] focus:border-[#718746] focus:bg-white focus:ring-4 focus:ring-[#586f32]/10"
           >
-            <X size={15} />
-          </button>
-        )}
+            <option value="">Sélectionner un téléphone</option>
+            {COMPTES.map((compte) => (
+              <option key={compte.id} value={compte.telephone}>
+                {compte.telephone}
+              </option>
+            ))}
+          </select>
 
-        <ChevronDown
-          size={15}
-          className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-slate-500"
-        />
+          <ChevronDown
+            size={16}
+            className="pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 text-[#7b8572]"
+          />
+        </div>
       </div>
-    </div>
 
-    {/* Téléphone */}
-    <div>
-      <label className="mb-1.5 block text-xs font-medium text-slate-600">
-        Téléphone
-      </label>
+      {/* Numéro de compte */}
+      <div className="min-w-0">
+        <FieldLabel>
+          Numéro de compte <span className="text-red-500">*</span>
+        </FieldLabel>
 
-      <div className="relative">
-        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">
-          <svg
-            viewBox="0 0 24 24"
-            width="16"
-            height="16"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="1.8"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            aria-hidden="true"
+        <div className="group relative mt-2">
+          <WalletCards
+            size={17}
+            strokeWidth={1.8}
+            className="pointer-events-none absolute left-3.5 top-1/2 z-10 -translate-y-1/2 text-[#647b40] transition-colors group-focus-within:text-[#435624]"
+          />
+
+          <select
+            value={numeroCompte}
+            onChange={(e) => {
+              const valeur = e.target.value;
+              const compte = COMPTES.find(
+                (c) => c.numero === valeur,
+              );
+
+              modifierFiltre(() => {
+                setNumeroCompte(valeur);
+                setCompteId(compte ? String(compte.id) : '');
+                setTelephone(compte?.telephone ?? '');
+              });
+            }}
+            className="h-12 w-full appearance-none rounded-xl border border-[#dfe5d8] bg-[#fcfdfb] pl-10 pr-10 text-sm font-medium text-[#34412b] outline-none transition-all duration-200 hover:border-[#b9c7a8] focus:border-[#718746] focus:bg-white focus:ring-4 focus:ring-[#586f32]/10"
           >
-            <path d="M22 16.92v3a2 2 0 0 1-2.18 2A19.8 19.8 0 0 1 11.2 18a19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.09 3.18 2 2 0 0 1 4.08 1h3a2 2 0 0 1 2 1.72c.12.96.35 1.9.69 2.8a2 2 0 0 1-.45 2.11L8.05 8.9a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.9.34 1.84.57 2.8.69A2 2 0 0 1 22 16.92Z" />
-          </svg>
-        </span>
+            <option value="">Sélectionner un numéro</option>
+            {COMPTES.map((compte) => (
+              <option key={compte.id} value={compte.numero}>
+                {compte.numero}
+              </option>
+            ))}
+          </select>
 
-        <input
-          value={telephone}
-          onChange={(e) => {
-            setTelephone(e.target.value);
-            setPage(1);
-          }}
-          className={`${champClass} pl-9`}
-          placeholder="+216 ..."
-          type="tel"
-        />
+          <ChevronDown
+            size={16}
+            className="pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 text-[#7b8572]"
+          />
+        </div>
+      </div>
+
+      {/* Boutons d'action */}
+      <div className="flex items-end gap-2 md:col-span-2 xl:col-span-1">
+        <button
+          type="button"
+          onClick={appliquerRecherche}
+          className="group inline-flex h-12 min-w-0 flex-1 items-center justify-center gap-2 rounded-xl bg-[#586f32] px-4 text-sm font-semibold text-white shadow-[0_3px_8px_rgba(65,83,39,0.16)] transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#465a27] hover:shadow-md focus:outline-none focus:ring-4 focus:ring-[#586f32]/20 active:translate-y-0"
+        >
+          <Search
+            size={17}
+            strokeWidth={2}
+            className="shrink-0 transition-transform group-hover:scale-110"
+          />
+          <span>Rechercher</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={reinitialiser}
+          title="Réinitialiser les critères"
+          className="inline-flex h-12 shrink-0 items-center justify-center gap-2 rounded-xl border border-[#dfe5d8] bg-white px-3.5 text-sm font-semibold text-[#53604a] transition-all duration-200 hover:border-[#c6d2b9] hover:bg-[#f7f9f3] hover:text-[#435624] focus:outline-none focus:ring-4 focus:ring-[#586f32]/10"
+        >
+          <RotateCcw size={16} strokeWidth={1.8} />
+          <span>Réinitialiser</span>
+        </button>
       </div>
     </div>
 
-    {/* Période */}
-    <div>
-      <label className="mb-1.5 block text-xs font-medium text-slate-600">
-        Période
-      </label>
-
-      <div className="flex min-h-[38px] flex-wrap items-center gap-2 rounded-md border border-slate-200 px-2 py-1.5 transition focus-within:border-[#63782c] focus-within:ring-1 focus-within:ring-[#63782c]/20">
-        <CalendarDays
-          size={16}
-          className="shrink-0 text-slate-500"
-        />
-
-        <input
-          type="date"
-          aria-label="Date de début"
-          value={dateDebut}
-          max={dateFin || undefined}
-          onChange={(e) => {
-            setDateDebut(e.target.value);
-            setPage(1);
-          }}
-          className="min-w-0 flex-1 bg-transparent text-xs text-slate-700 outline-none"
-        />
-
-        <span className="text-xs text-slate-400">–</span>
-
-        <input
-          type="date"
-          aria-label="Date de fin"
-          value={dateFin}
-          min={dateDebut || undefined}
-          onChange={(e) => {
-            setDateFin(e.target.value);
-            setPage(1);
-          }}
-          className="min-w-0 flex-1 bg-transparent text-xs text-slate-700 outline-none"
-        />
+    {/* Message d'erreur */}
+    {messageErreur && (
+      <div
+        role="alert"
+        className="mt-4 flex items-start gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
+      >
+        <X size={17} className="mt-0.5 shrink-0" />
+        <p className="font-medium leading-5">{messageErreur}</p>
       </div>
-    </div>
+    )}
   </div>
 </section>
 
-        {/* Tableau */}
-        <section className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
-          <div className="flex flex-wrap items-center justify-between gap-3 px-4 pb-3 pt-4">
-            <div className="flex items-center gap-2">
-              <FileText size={19} className="text-[#63782c]" />
-              <h2 className="text-base font-bold text-slate-900">
-                Historique des traitements
-              </h2>
+
+        {/* Informations du compte */}
+        <section className="rounded-xl border border-[#e6eae3] bg-white p-3 shadow-[0_2px_8px_rgba(28,43,20,0.025)] sm:p-4">
+          <div className="rounded-lg border border-[#edf1e7] bg-gradient-to-r from-[#f3f7ed] to-[#f8faf5] p-3.5 sm:p-4">
+            <div className="mb-4 flex items-center gap-3">
+              <div className="flex size-10 items-center justify-center rounded-full bg-[#e0ebd1] text-[#526b2c]">
+                <UserRound size={21} />
+              </div>
+              <div>
+                <h2 className="text-sm font-bold text-[#172b3d]">Compte sélectionné</h2>
+                <p className="mt-1 text-xs text-[#7b8795]">
+                  {compteSelectionne
+                    ? 'Les informations du compte sélectionné.'
+                    : 'Sélectionnez un compte pour afficher ses informations.'}
+                </p>
+              </div>
             </div>
 
-            <span className="rounded-md bg-[#edf4e5] px-2.5 py-1 text-xs font-semibold text-[#526c23]">
-              {traitementsFiltres.length} opérations
-            </span>
-          </div>
-
-          {/* Filtres */}
-          <div className="flex flex-wrap items-center gap-2 border-b border-slate-100 px-4 pb-3">
-            <div className="relative w-full sm:max-w-[280px]">
-              <Search
-                size={15}
-                className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
-              />
-              <input
-                value={recherche}
-                onChange={(e) => {
-                  setRecherche(e.target.value);
-                  setPage(1);
-                }}
-                placeholder="Rechercher..."
-                className={`${champClass} py-2 pl-8 text-xs`}
-              />
-            </div>
-
-            <div className="relative w-full sm:max-w-[210px]">
-              <select
-                value={typeHuile}
-                onChange={(e) => {
-                  setTypeHuile(e.target.value);
-                  setPage(1);
-                }}
-                className={`${champClass} appearance-none py-2 pr-8 text-xs`}
-              >
-                <option>Tous les types d’huile</option>
-                {TYPES_HUILE.map((type) => (
-                  <option key={type} value={type}>
-                    {type}
-                  </option>
-                ))}
-              </select>
-              <ChevronDown
-                size={15}
-                className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-slate-500"
-              />
-            </div>
-
-            <button
-              type="button"
-              onClick={reinitialiserFiltres}
-              title="Réinitialiser les filtres"
-              className="inline-flex items-center gap-1.5 rounded-md border border-slate-200 px-3 py-2 text-xs font-medium text-slate-600 transition hover:bg-slate-50"
-            >
-              <RotateCcw size={13} />
-              Réinitialiser
-            </button>
-          </div>
-
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[950px] border-collapse text-left text-xs">
-              <thead>
-                <tr className="bg-[#f7f9fb] text-slate-600">
-                  <th className="px-3 py-3 font-semibold">
-                    <SortLabel label="Date" />
-                  </th>
-                  <th className="px-3 py-3 text-right font-semibold">
-                    <SortLabel label="Poids olive (kg)" />
-                  </th>
-                  <th className="px-3 py-3 text-right font-semibold">
-                    <SortLabel label="Poids d’huile (L)" />
-                  </th>
-                  <th className="px-3 py-3 font-semibold">
-                    <SortLabel label="Type d’huile" />
-                  </th>
-                  <th className="px-3 py-3 text-right font-semibold">
-                    <SortLabel label="Prix unité (DT)" />
-                  </th>
-                  <th className="px-3 py-3 text-right font-semibold">
-                    <SortLabel label="Prix total (DT)" />
-                  </th>
-                  <th className="px-3 py-3 font-semibold">Observation</th>
-                </tr>
-              </thead>
-
-              <tbody className="divide-y divide-slate-100">
-                {traitementsAffiches.map((item) => (
-                  <tr
-                    key={item.id}
-                    className="transition hover:bg-[#f8faf5]"
-                  >
-                    <td className="whitespace-nowrap px-3 py-2.5 text-slate-700">
-                      {item.date}
-                    </td>
-                    <td className="whitespace-nowrap px-3 py-2.5 text-right text-slate-700">
-                      {formaterNombre(item.poidsOlive)}
-                    </td>
-                    <td className="whitespace-nowrap px-3 py-2.5 text-right text-slate-700">
-                      {formaterNombre(item.poidsHuile)}
-                    </td>
-                    <td className="whitespace-nowrap px-3 py-2.5 text-slate-700">
-                      {item.typeHuile}
-                    </td>
-                    <td className="whitespace-nowrap px-3 py-2.5 text-right text-slate-700">
-                      {formaterNombre(item.prixUnite)}
-                    </td>
-                    <td className="whitespace-nowrap px-3 py-2.5 text-right font-medium text-slate-800">
-                      {formaterNombre(calculerPrixTotal(item))}
-                    </td>
-                    <td className="whitespace-nowrap px-3 py-2.5 text-slate-700">
-                      {item.observation}
-                    </td>
-                  </tr>
-                ))}
-
-                {traitementsAffiches.length === 0 && (
-                  <tr>
-                    <td
-                      colSpan={7}
-                      className="px-4 py-12 text-center text-sm text-slate-500"
-                    >
-                      Aucune opération ne correspond aux filtres sélectionnés.
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-
-          {/* Pagination */}
-          <div className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 px-4 py-3">
-            <p className="text-xs text-slate-500">
-              {traitementsFiltres.length === 0
-                ? 'Aucun résultat'
-                : `Affichage de ${(page - 1) * PAGE_SIZE + 1} à ${Math.min(
-                    page * PAGE_SIZE,
-                    traitementsFiltres.length,
-                  )} sur ${traitementsFiltres.length} résultats`}
-            </p>
-
-            <div className="flex items-center gap-1">
-              <button
-                type="button"
-                aria-label="Page précédente"
-                disabled={page === 1}
-                onClick={() => setPage((p) => Math.max(1, p - 1))}
-                className="flex h-8 w-8 items-center justify-center rounded-md border border-slate-200 text-slate-600 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
-              >
-                <ChevronLeft size={16} />
-              </button>
-
-              {Array.from({ length: nombrePages }, (_, index) => index + 1)
-                .filter(
-                  (numero) =>
-                    numero === 1 ||
-                    numero === nombrePages ||
-                    Math.abs(numero - page) <= 1,
-                )
-                .map((numero, index, numeros) => (
-                  <span key={numero} className="contents">
-                    {index > 0 && numero - numeros[index - 1] > 1 && (
-                      <span className="px-1 text-slate-400">…</span>
-                    )}
-                    <button
-                      type="button"
-                      onClick={() => setPage(numero)}
-                      aria-current={page === numero ? 'page' : undefined}
-                      className={`h-8 min-w-8 rounded-md border px-2 text-xs font-medium transition ${
-                        page === numero
-                          ? 'border-[#63782c] bg-[#63782c] text-white'
-                          : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
-                      }`}
-                    >
-                      {numero}
-                    </button>
-                  </span>
-                ))}
-
-              <button
-                type="button"
-                aria-label="Page suivante"
-                disabled={page === nombrePages}
-                onClick={() =>
-                  setPage((p) => Math.min(nombrePages, p + 1))
-                }
-                className="flex h-8 w-8 items-center justify-center rounded-md border border-slate-200 text-slate-600 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
-              >
-                <ChevronRight size={16} />
-              </button>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+              <InfoCompte icon={<UserRound size={16} />} label="Nom du compte" value={compteSelectionne?.nom ?? '—'} />
+              <InfoCompte icon={<Phone size={16} />} label="Téléphone" value={compteSelectionne?.telephone ?? '—'} />
+              <InfoCompte icon={<WalletCards size={16} />} label="Numéro de compte" value={compteSelectionne?.numero ?? '—'} />
+              <InfoCompte icon={<Users size={16} />} label="Type de compte" value={compteSelectionne?.type ?? '—'} last />
             </div>
           </div>
         </section>
+
+        {/* Bons de réception : tableau masqué avant une recherche valide */}
+        <section className="overflow-hidden rounded-xl border border-[#e6eae3] bg-white shadow-[0_2px_8px_rgba(28,43,20,0.025)]">
+          <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-4 sm:px-5">
+            <SectionTitle
+              icon={<ClipboardList size={19} />}
+              title="Bons de réception"
+              description={
+                !rechercheLancee
+                  ? 'Choisissez un type d’huile et un compte pour afficher les bons.'
+                  : `Résultats : ${bonsFiltres.length} bon(s) de réception.`
+              }
+            />
+
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                onClick={exporterCSV}
+                disabled={bonsFiltres.length === 0}
+                className="inline-flex items-center gap-2 rounded-lg border border-[#dfe5da] bg-white px-3 py-2 text-xs font-semibold text-[#34452a] transition hover:bg-[#f4f7ef] disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                <Download size={14} />
+                Exporter
+              </button>
+              <button
+                type="button"
+                onClick={actualiser}
+                className="inline-flex items-center gap-2 rounded-lg border border-[#dfe5da] bg-white px-3 py-2 text-xs font-semibold text-[#34452a] transition hover:bg-[#f4f7ef]"
+              >
+                <RefreshCw size={14} />
+                Actualiser
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setRechercheTableau('');
+                  setTaillePage(5);
+                  setPage(1);
+                  setSelection([]);
+                }}
+                aria-label="Réinitialiser la recherche du tableau"
+                title="Réinitialiser la recherche du tableau"
+                className="flex size-9 items-center justify-center rounded-lg border border-[#dfe5da] bg-white text-[#556b2f] transition hover:bg-[#f4f7ef]"
+              >
+                <SlidersHorizontal size={15} />
+              </button>
+            </div>
+          </div>
+
+          {!rechercheLancee ? (
+            <div className="border-t border-[#edf0e9] px-4 py-14 text-center sm:px-5">
+              <div className="mx-auto flex max-w-sm flex-col items-center">
+                <div className="mb-3 flex size-12 items-center justify-center rounded-xl bg-[#f0f4e9] text-[#687d43]">
+                  <Filter size={22} />
+                </div>
+                <p className="text-sm font-semibold text-[#344054]">
+                  Aucun bon affiché
+                </p>
+                <p className="mt-1 text-xs leading-5 text-[#7b8795]">
+                  Sélectionnez un type d’huile et un numéro de compte ou un téléphone, puis cliquez sur « Rechercher ».
+                </p>
+              </div>
+            </div>
+          ) : (
+            <>
+              
+
+              {/* Tableau */}
+              <div className="overflow-x-auto">
+                <table className="w-full min-w-[1020px] border-collapse text-left text-[11px]">
+                  <thead>
+                    <tr className="border-b border-[#e7ebe3] bg-[#f5f7f2] text-[#475467]">
+                      <th className="w-10 px-3 py-3 text-center">
+                        <input
+                          type="checkbox"
+                          checked={toutSelectionne}
+                          onChange={basculerToutesLesSelections}
+                          aria-label="Sélectionner tous les bons de cette page"
+                          className="size-3.5 cursor-pointer accent-[#586f32]"
+                        />
+                      </th>
+                      {[
+                        'Référence',
+                        'Compte',
+                        'Date de réception',
+                        "Type d'huile",
+                        "Quantité d'olives (kg)",
+                        "Quantité d'huile (kg)",
+                        'Montant (DT)',
+                        'Statut',
+                      ].map((titre) => (
+                        <th key={titre} className="whitespace-nowrap px-3 py-3 font-semibold">
+                          <span className="inline-flex items-center gap-1.5">
+                            {titre}
+                            <ChevronsUpDown size={11} className="text-[#a0a9b5]" />
+                          </span>
+                        </th>
+                      ))}
+                      <th className="px-3 py-3 text-center font-semibold">Actions</th>
+                    </tr>
+                  </thead>
+
+                  <tbody className="divide-y divide-[#edf0e9]">
+                    {bonsAffiches.map((bon) => {
+                      const compte = COMPTES.find((c) => c.id === bon.compteId);
+                      const coche = selection.includes(bon.id);
+
+                      return (
+                        <tr
+                          key={bon.id}
+                          className={`transition hover:bg-[#f7f9f4] ${coche ? 'bg-[#f1f5e9]' : 'bg-white'}`}
+                        >
+                          <td className="px-3 py-2.5 text-center">
+                            <input
+                              type="checkbox"
+                              checked={coche}
+                              onChange={() => basculerSelection(bon.id)}
+                              aria-label={`Sélectionner ${bon.reference}`}
+                              className="size-3.5 cursor-pointer accent-[#586f32]"
+                            />
+                          </td>
+                          <td className="whitespace-nowrap px-3 py-2.5 font-semibold text-[#344054]">{bon.reference}</td>
+                          <td className="whitespace-nowrap px-3 py-2.5 text-[#526174]">{compte?.nom ?? '—'}</td>
+                          <td className="whitespace-nowrap px-3 py-2.5 text-[#526174]">{formatDate(bon.date)}</td>
+                          <td className="whitespace-nowrap px-3 py-2.5 text-[#526174]">{bon.typeHuile}</td>
+                          <td className="whitespace-nowrap px-3 py-2.5 text-[#526174]">{formatNumber(bon.quantiteOlives)}</td>
+                          <td className="whitespace-nowrap px-3 py-2.5 text-[#526174]">{formatNumber(bon.quantiteHuile)}</td>
+                          <td className="whitespace-nowrap px-3 py-2.5 font-semibold text-[#344054]">{formatMoney(bon.montant)}</td>
+                          <td className="px-3 py-2.5">
+                            <StatusBadge status={bon.statut} />
+                          </td>
+                          <td className="px-3 py-2.5">
+                            <div className="flex items-center justify-center">
+                              <button
+                                type="button"
+                                onClick={() => setDetailsBon(bon)}
+                                aria-label={`Voir ${bon.reference}`}
+                                title="Voir les détails"
+                                className="flex size-7 items-center justify-center rounded-md border border-[#e5e9e1] bg-white text-[#536575] transition hover:border-[#bdcdaa] hover:bg-[#edf3e5] hover:text-[#556b2f]"
+                              >
+                                <Eye size={13} />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+
+                    {bonsAffiches.length === 0 && (
+                      <tr>
+                        <td colSpan={10} className="px-4 py-14 text-center">
+                          <div className="mx-auto flex max-w-sm flex-col items-center">
+                            <div className="mb-3 flex size-11 items-center justify-center rounded-xl bg-[#f0f4e9] text-[#687d43]">
+                              <FileText size={21} />
+                            </div>
+                            <p className="text-sm font-semibold text-[#344054]">
+                              Aucun bon de réception trouvé
+                            </p>
+                            <p className="mt-1 text-xs leading-5 text-[#7b8795]">
+                              Aucun bon ne correspond à ces critères. Essayez une autre sélection.
+                            </p>
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Pagination */}
+              <div className="flex flex-wrap items-center justify-between gap-3 border-t border-[#edf0e9] px-4 py-3.5 sm:px-5">
+                <p className="text-[11px] text-[#667085]">
+                  {bonsFiltres.length === 0
+                    ? 'Aucun bon de réception'
+                    : `Affichage de ${(page - 1) * taillePage + 1} à ${Math.min(page * taillePage, bonsFiltres.length)} sur ${bonsFiltres.length} bons de réception`}
+                </p>
+
+                <div className="flex items-center gap-1.5">
+                  <button
+                    type="button"
+                    disabled={page === 1}
+                    onClick={() => setPage((p) => Math.max(1, p - 1))}
+                    aria-label="Page précédente"
+                    className="flex size-8 items-center justify-center rounded-lg border border-[#e0e5dc] bg-white text-[#667085] transition hover:bg-[#f4f7ef] disabled:cursor-not-allowed disabled:opacity-40"
+                  >
+                    <ChevronLeft size={15} />
+                  </button>
+
+                  {Array.from({ length: nombrePages }, (_, i) => i + 1)
+                    .filter((numero) =>
+                      numero === 1 ||
+                      numero === nombrePages ||
+                      Math.abs(numero - page) <= 1
+                    )
+                    .map((numero, index, numeros) => (
+                      <span key={numero} className="contents">
+                        {index > 0 && numero - numeros[index - 1] > 1 && (
+                          <span className="px-1 text-xs text-[#98a2b3]">…</span>
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => setPage(numero)}
+                          aria-current={page === numero ? 'page' : undefined}
+                          className={`flex size-8 items-center justify-center rounded-lg border text-xs font-semibold transition ${
+                            page === numero
+                              ? 'border-[#586f32] bg-[#586f32] text-white shadow-sm'
+                              : 'border-[#e0e5dc] bg-white text-[#526174] hover:bg-[#f4f7ef]'
+                          }`}
+                        >
+                          {numero}
+                        </button>
+                      </span>
+                    ))}
+
+                  <button
+                    type="button"
+                    disabled={page === nombrePages}
+                    onClick={() => setPage((p) => Math.min(nombrePages, p + 1))}
+                    aria-label="Page suivante"
+                    className="flex size-8 items-center justify-center rounded-lg border border-[#e0e5dc] bg-white text-[#667085] transition hover:bg-[#f4f7ef] disabled:cursor-not-allowed disabled:opacity-40"
+                  >
+                    <ChevronRight size={15} />
+                  </button>
+                </div>
+              </div>
+            </>
+          )}
+        </section>
       </div>
 
-      {/* Modal : nouveau traitement */}
-      {modalOuvert && (
+      {/* Détails d'un bon */}
+      {detailsBon && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-slate-900/40 p-4"
-          onClick={() => setModalOuvert(false)}
+          className="fixed inset-0 z-[100] flex items-center justify-center overflow-y-auto bg-[#172b3d]/40 p-4 backdrop-blur-[2px]"
+          onClick={() => setDetailsBon(null)}
         >
           <div
             role="dialog"
             aria-modal="true"
-            aria-labelledby="nouveau-traitement-title"
-            className="my-auto w-full max-w-xl rounded-xl bg-white p-5 shadow-xl"
+            aria-labelledby="detail-bon-title"
+            className="my-auto w-full max-w-lg overflow-hidden rounded-2xl border border-[#e2e8dc] bg-white shadow-2xl"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="mb-5 flex items-center justify-between">
+            <div className="flex items-start justify-between gap-3 border-b border-[#edf0e9] bg-gradient-to-r from-[#f3f7ed] to-white px-5 py-4">
               <div>
-                <h2
-                  id="nouveau-traitement-title"
-                  className="text-lg font-bold text-slate-900"
-                >
-                  Nouveau traitement
-                </h2>
-                <p className="mt-1 text-sm text-slate-500">
-                  Saisir les informations de l’opération.
+                <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-[#71843d]">
+                  Détail du bon de réception
                 </p>
+                <h2 id="detail-bon-title" className="mt-1 text-lg font-bold text-[#172b3d]">
+                  {detailsBon.reference}
+                </h2>
               </div>
               <button
                 type="button"
-                onClick={() => setModalOuvert(false)}
-                aria-label="Fermer"
-                className="rounded-md p-2 text-slate-500 hover:bg-slate-100"
+                onClick={() => setDetailsBon(null)}
+                aria-label="Fermer les détails"
+                className="rounded-lg p-2 text-[#667085] transition hover:bg-[#edf1e7] hover:text-[#344054]"
               >
-                <X size={19} />
+                <X size={17} />
               </button>
             </div>
 
-            <form onSubmit={ajouterTraitement} className="space-y-4">
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <div>
-                  <label className="mb-1.5 block text-sm font-medium text-slate-700">
-                    Date
-                  </label>
-                  <input
-                    type="date"
-                    required
-                    value={nouveau.date}
-                    onChange={(e) =>
-                      setNouveau({ ...nouveau, date: e.target.value })
-                    }
-                    className={champClass}
-                  />
-                </div>
+            <div className="grid grid-cols-1 gap-3 p-5 sm:grid-cols-2">
+              <DetailItem label="Compte" value={COMPTES.find((c) => c.id === detailsBon.compteId)?.nom ?? '—'} />
+              <DetailItem label="Date de réception" value={formatDate(detailsBon.date)} />
+              <DetailItem label="Type d’huile" value={detailsBon.typeHuile} />
+              <DetailItem label="Statut" value={detailsBon.statut} />
+              <DetailItem label="Quantité d’olives" value={`${formatNumber(detailsBon.quantiteOlives)} kg`} />
+              <DetailItem label="Quantité d’huile" value={`${formatNumber(detailsBon.quantiteHuile)} kg`} />
+              <DetailItem label="Montant total" value={`${formatMoney(detailsBon.montant)} DT`} />
+            </div>
 
-                <div>
-                  <label className="mb-1.5 block text-sm font-medium text-slate-700">
-                    Type d’huile
-                  </label>
-                  <select
-                    value={nouveau.typeHuile}
-                    onChange={(e) =>
-                      setNouveau({ ...nouveau, typeHuile: e.target.value })
-                    }
-                    className={champClass}
-                  >
-                    {TYPES_HUILE.map((type) => (
-                      <option key={type} value={type}>
-                        {type}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label className="mb-1.5 block text-sm font-medium text-slate-700">
-                    Poids olive (kg)
-                  </label>
-                  <input
-                    type="number"
-                    min="0.01"
-                    step="0.01"
-                    required
-                    value={nouveau.poidsOlive}
-                    onChange={(e) =>
-                      setNouveau({ ...nouveau, poidsOlive: e.target.value })
-                    }
-                    placeholder="Ex. : 850"
-                    className={champClass}
-                  />
-                </div>
-
-                <div>
-                  <label className="mb-1.5 block text-sm font-medium text-slate-700">
-                    Poids huile (L)
-                  </label>
-                  <input
-                    type="number"
-                    min="0.01"
-                    step="0.01"
-                    required
-                    value={nouveau.poidsHuile}
-                    onChange={(e) =>
-                      setNouveau({ ...nouveau, poidsHuile: e.target.value })
-                    }
-                    placeholder="Ex. : 165"
-                    className={champClass}
-                  />
-                </div>
-
-                <div>
-                  <label className="mb-1.5 block text-sm font-medium text-slate-700">
-                    Prix unité (DT/L)
-                  </label>
-                  <input
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    required
-                    value={nouveau.prixUnite}
-                    onChange={(e) =>
-                      setNouveau({ ...nouveau, prixUnite: e.target.value })
-                    }
-                    placeholder="Ex. : 7.50"
-                    className={champClass}
-                  />
-                </div>
-
-                <div>
-                  <label className="mb-1.5 block text-sm font-medium text-slate-700">
-                    Observation
-                  </label>
-                  <input
-                    value={nouveau.observation}
-                    onChange={(e) =>
-                      setNouveau({ ...nouveau, observation: e.target.value })
-                    }
-                    placeholder="Ex. : Lot A-12"
-                    className={champClass}
-                  />
-                </div>
-              </div>
-
-              <div className="flex justify-end gap-2 border-t border-slate-100 pt-4">
-                <button
-                  type="button"
-                  onClick={() => setModalOuvert(false)}
-                  className="rounded-md border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
-                >
-                  Annuler
-                </button>
-                <button
-                  type="submit"
-                  className="inline-flex items-center gap-2 rounded-md bg-[#63782c] px-4 py-2 text-sm font-semibold text-white hover:bg-[#526522]"
-                >
-                  <Plus size={16} />
-                  Ajouter
-                </button>
-              </div>
-            </form>
+            <div className="flex justify-end border-t border-[#edf0e9] px-5 py-4">
+              <button
+                type="button"
+                onClick={() => setDetailsBon(null)}
+                className="rounded-lg bg-[#586f32] px-4 py-2 text-xs font-semibold text-white transition hover:bg-[#465a27]"
+              >
+                Fermer
+              </button>
+            </div>
           </div>
         </div>
       )}
     </div>
   );
 }
-
-type StatCardProps = {
-  icon: React.ReactNode;
-  label: string;
-  value: string;
-  iconClass: string;
-  cardClass: string;
-};
-
-function StatCard({
-  icon,
-  label,
-  value,
-  iconClass,
-  cardClass,
-}: StatCardProps) {
-  return (
-    <div
-      className={`flex min-h-[88px] items-center gap-3 rounded-lg border p-3.5 shadow-sm ${cardClass}`}
-    >
-      <div
-        className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-xl ${iconClass}`}
-      >
-        {icon}
-      </div>
-      <div className="min-w-0">
-        <p className="text-xs font-medium text-slate-500">{label}</p>
-        <p className="mt-1 break-words text-lg font-bold tracking-tight text-slate-900">
-          {value}
-        </p>
-      </div>
-    </div>
-  );
-}
-
-function SortLabel({ label }: { label: string }) {
-  return (
-    <span className="inline-flex items-center gap-1 whitespace-nowrap">
-      {label}
-      <ChevronsUpDown size={12} className="text-slate-400" />
-    </span>
-  );
-}
-

@@ -1,29 +1,30 @@
-
-import { useState } from 'react';
-import type { ChangeEvent, FormEvent } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useState } from "react";
+import type { ChangeEvent, FormEvent } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import {
   ArrowLeft,
+  ArrowRight,
   Check,
   CheckCircle2,
+  ChevronRight,
   Eye,
   EyeOff,
   Hash,
+  Home,
+  LoaderCircle,
   Lock,
   Mail,
   ShieldCheck,
-  User,
   UserRound,
   X,
-  LoaderCircle,
-} from 'lucide-react';
+} from "lucide-react";
 
-import { Button } from '@/components/ui/button';
-import { Container } from '@/components/common/container';
+import { Button } from "@/components/ui/button";
+import { Container } from "@/components/common/container";
 import {
   utilisateurCrudApi,
   type UtilisateurApiPayload,
-} from '@/services/api';
+} from "@/services/api";
 
 interface Utilisateur {
   id?: number;
@@ -60,17 +61,17 @@ export function AjouterUtilisateurPage() {
   const isEdit = Boolean(utilisateur);
 
   const [formData, setFormData] = useState<FormDataUtilisateur>({
-    displayName: utilisateur?.displayName ?? '',
-    userName: utilisateur?.userName ?? '',
-    mail: utilisateur?.mail ?? '',
-    password: '',
-    userCode: utilisateur?.userCode ?? '',
+    displayName: utilisateur?.displayName ?? "",
+    userName: utilisateur?.userName ?? "",
+    mail: utilisateur?.mail ?? "",
+    password: "",
+    userCode: utilisateur?.userCode ?? "",
     isActive: utilisateur?.isActive ?? true,
   });
 
   const [showPassword, setShowPassword] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
-  const [errorMessage, setErrorMessage] = useState('');
+  const [errorMessage, setErrorMessage] = useState("");
   const [saving, setSaving] = useState(false);
 
   const handleChange = (event: ChangeEvent<HTMLInputElement>) => {
@@ -81,7 +82,7 @@ export function AjouterUtilisateurPage() {
       [name]: value,
     }));
 
-    setErrorMessage('');
+    setErrorMessage("");
   };
 
   const handleToggleStatus = () => {
@@ -92,468 +93,732 @@ export function AjouterUtilisateurPage() {
   };
 
   const handleCancel = () => {
-    navigate('/store-admin/users');
+    navigate("/store-admin/users");
   };
 
-  
-const handleSubmit = async (
-  event: FormEvent<HTMLFormElement>,
-) => {
-  event.preventDefault();
+  // Même logique de validation et d'enregistrement du backend.
+  const handleSubmit = async (
+    event: FormEvent<HTMLFormElement>,
+  ) => {
+    event.preventDefault();
 
-  if (saving) return;
+    if (saving) return;
 
-  setErrorMessage('');
+    setErrorMessage("");
 
-  const displayName = formData.displayName.trim();
-  const userName = formData.userName.trim();
-  const mail = formData.mail.trim();
-  const userCode = formData.userCode.trim();
-  const password = formData.password;
+    const displayName = formData.displayName.trim();
+    const userName = formData.userName.trim();
+    const mail = formData.mail.trim();
+    const userCode = formData.userCode.trim();
+    const password = formData.password;
 
-  if (!displayName || !userName || !mail || !userCode) {
-    setErrorMessage(
-      'Veuillez remplir tous les champs obligatoires.',
-    );
-    return;
-  }
-
-  if (!isEdit && !password.trim()) {
-    setErrorMessage('Veuillez saisir un mot de passe.');
-    return;
-  }
-
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
-  if (!emailRegex.test(mail)) {
-    setErrorMessage('Veuillez saisir une adresse e-mail valide.');
-    return;
-  }
-
-  if (
-    isEdit &&
-    utilisateur?.id == null &&
-    utilisateur?.userId == null
-  ) {
-    setErrorMessage(
-      "L'identifiant de l'utilisateur est introuvable. Retournez à la liste et réessayez.",
-    );
-    return;
-  }
-
-  const payload: UtilisateurApiPayload = {
-    ...(isEdit
-      ? {
-          ...(utilisateur?.id != null
-            ? { id: utilisateur.id }
-            : {}),
-          ...(utilisateur?.userId != null
-            ? { userId: utilisateur.userId }
-            : {}),
-        }
-      : {}),
-    displayName,
-    userName,
-    mail,
-    ...(password.trim() ? { password } : {}),
-    userCode,
-    isActive: formData.isActive,
-    roles: utilisateur?.roles ?? [],
-  };
-
-  setSaving(true);
-
-  try {
-    if (isEdit) {
-      await utilisateurCrudApi.modifier(payload);
-    } else {
-      await utilisateurCrudApi.ajouter(payload);
+    if (!displayName || !userName || !mail || !userCode) {
+      setErrorMessage(
+        "Veuillez remplir tous les champs obligatoires.",
+      );
+      return;
     }
 
-    setShowSuccessModal(true);
-  } catch (error: unknown) {
-    console.error(
-      "Erreur lors de l'enregistrement de l'utilisateur :",
-      error,
-    );
+    if (!isEdit && !password.trim()) {
+      setErrorMessage("Veuillez saisir un mot de passe.");
+      return;
+    }
 
-    setErrorMessage(
-      error instanceof Error
-        ? error.message
-        : "Une erreur est survenue lors de l'enregistrement.",
-    );
-  } finally {
-    setSaving(false);
-  }
-};
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
+    if (!emailRegex.test(mail)) {
+      setErrorMessage(
+        "Veuillez saisir une adresse e-mail valide.",
+      );
+      return;
+    }
+
+    if (
+      isEdit &&
+      utilisateur?.id == null &&
+      utilisateur?.userId == null
+    ) {
+      setErrorMessage(
+        "L'identifiant de l'utilisateur est introuvable. Retournez à la liste et réessayez.",
+      );
+      return;
+    }
+
+    const payload: UtilisateurApiPayload = {
+      ...(isEdit
+        ? {
+            ...(utilisateur?.id != null
+              ? { id: utilisateur.id }
+              : {}),
+            ...(utilisateur?.userId != null
+              ? { userId: utilisateur.userId }
+              : {}),
+          }
+        : {}),
+      displayName,
+      userName,
+      mail,
+      ...(password.trim() ? { password } : {}),
+      userCode,
+      isActive: formData.isActive,
+      roles: utilisateur?.roles ?? [],
+    };
+
+    setSaving(true);
+
+    try {
+      if (isEdit) {
+        await utilisateurCrudApi.modifier(payload);
+      } else {
+        await utilisateurCrudApi.ajouter(payload);
+      }
+
+      setShowSuccessModal(true);
+    } catch (error: unknown) {
+      console.error(
+        "Erreur lors de l'enregistrement de l'utilisateur :",
+        error,
+      );
+
+      setErrorMessage(
+        error instanceof Error
+          ? error.message
+          : "Une erreur est survenue lors de l'enregistrement.",
+      );
+    } finally {
+      setSaving(false);
+    }
+  };
 
   const handleSuccessOk = () => {
-  setShowSuccessModal(false);
+    setShowSuccessModal(false);
 
-  navigate('/store-admin/users', {
-    state: { refreshUsers: true },
-  });
-};
+    navigate("/store-admin/users", {
+      state: { refreshUsers: true },
+    });
+  };
 
   const inputClassName =
-    'h-11 w-full rounded-lg border border-slate-200 bg-white pl-10 pr-3 text-sm text-slate-800 outline-none transition placeholder:text-slate-400 hover:border-slate-300 focus:border-[#556B2F] focus:ring-2 focus:ring-[#556B2F]/10';
+    "h-[46px] w-full rounded-lg border border-[#dfe6ef] bg-white pl-11 pr-3 text-sm font-medium text-[#172033] outline-none transition-all duration-200 placeholder:font-normal placeholder:text-[#98a5b8] hover:border-[#c5d2e0] focus:border-[#718747] focus:ring-4 focus:ring-[#556B2F]/[0.08]";
 
   const labelClassName =
-    'mb-2 block text-sm font-semibold text-slate-700';
+    "mb-2 flex items-center gap-1.5 text-[13px] font-semibold text-[#25334a]";
+
+  const requiredMark = (
+    <span className="text-[#e5484d]">*</span>
+  );
 
   return (
     <>
       <Container>
-        {/* En-tête */}
-        <div className="pb-6 pt-5 sm:pb-8 sm:pt-7">
-          <div className="flex flex-col justify-between gap-5 border-b border-slate-200 pb-6 sm:flex-row sm:items-center">
-            <div className="flex min-w-0 items-start gap-4">
-              <div className="flex size-12 shrink-0 items-center justify-center rounded-xl border border-[#e0e8d5] bg-[#f2f6ed]">
-                <UserRound className="size-6 text-[#556B2F]" />
-              </div>
+        <div className="min-h-full w-full  px-1 py-5 sm:px-2 sm:py-7">
+          <div className="mx-auto max-w-[1440px]">
+            {/* En-tête de page */}
+            <header className="relative mb-5 overflow-hidden rounded-2xl border border-[#e8ecdf] bg-gradient-to-br from-white via-white to-[#f1f5e9] px-5 py-5 sm:px-7 sm:py-6">
+              <div
+                aria-hidden="true"
+                className="pointer-events-none absolute -right-12 -top-20 size-64 rounded-full border border-[#e3ead8] opacity-60"
+              />
+              <div
+                aria-hidden="true"
+                className="pointer-events-none absolute -right-5 -top-12 size-48 rounded-full border border-[#e3ead8] opacity-60"
+              />
 
-              <div className="min-w-0">
-                <div className="mb-1.5 flex flex-wrap items-center gap-2">
-                  <h1 className="text-2xl font-bold text-slate-900">
+              <div className="relative">
+                {/* Fil d'Ariane */}
+                <nav
+                  aria-label="Fil d'Ariane"
+                  className="mb-4 flex flex-wrap items-center gap-2 text-[11px] font-medium text-[#87927c]"
+                >
+                  <button
+                    type="button"
+                    onClick={() => navigate("/store-admin")}
+                    aria-label="Accueil"
+                    className="transition hover:text-[#556B2F]"
+                  >
+                    <Home className="size-3.5" />
+                  </button>
+
+                  <ChevronRight className="size-3" />
+
+                  <button
+                    type="button"
+                    onClick={() =>
+                      navigate("/store-admin/users")
+                    }
+                    className="transition hover:text-[#556B2F]"
+                  >
+                    Sécurité
+                  </button>
+
+                  <ChevronRight className="size-3" />
+
+                  <span className="font-semibold text-[#33412b]">
                     {isEdit
-                      ? 'Modifier un utilisateur'
-                      : 'Ajouter un utilisateur'}
-                  </h1>
+                      ? "Modifier un utilisateur"
+                      : "Ajouter un utilisateur"}
+                  </span>
+                </nav>
 
-                  <span className="rounded-md border border-[#dce7d0] bg-[#f5f8f1] px-2 py-1 text-[10px] font-semibold uppercase tracking-wide text-[#556B2F]">
-                    {isEdit ? 'Modification' : 'Nouveau compte'}
+                <div className="flex flex-col justify-between gap-5 sm:flex-row sm:items-center">
+  <div className="flex min-w-0 items-center gap-4 sm:gap-5">
+    {/* Icône alignée avec le titre */}
+    <div className="flex size-[58px] shrink-0 items-center justify-center rounded-2xl border border-[#dfe8d3] bg-gradient-to-br from-[#f5f8ef] to-[#eaf0df] text-[#556B2F] shadow-[0_3px_10px_rgba(85,107,47,0.07)]">
+      <UserRound
+        className="size-7"
+        strokeWidth={1.9}
+      />
+    </div>
+
+    {/* Titre et description */}
+    <div className="min-w-0">
+      <div className="flex flex-wrap items-center gap-3">
+        <h1 className="text-[25px] font-bold leading-tight tracking-[-0.035em] text-[#172033] sm:text-[32px]">
+          {isEdit
+            ? "Modifier un utilisateur"
+            : "Ajouter un utilisateur"}
+        </h1>
+
+      </div>
+
+      <p className="mt-2.5 max-w-2xl text-[14px] font-normal leading-[1.8] tracking-[0.01em] text-[#64748b] sm:text-[15px]">
+  {isEdit
+    ? "Modifiez les informations et les paramètres du compte utilisateur."
+    : "Créez un compte utilisateur et configurez ses informations de connexion."}
+</p>
+    </div>
+  </div>
+
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={handleCancel}
+                    className="h-10 shrink-0 gap-2 self-start rounded-lg border-[#dce7d0] bg-white/90 px-4 text-[13px] font-semibold text-[#556B2F] shadow-sm transition hover:border-[#c8d8b6] hover:bg-[#f1f5e9] sm:self-center"
+                  >
+                    <ArrowLeft className="size-4" />
+                    Retour à la liste
+                  </Button>
+                </div>
+              </div>
+            </header>
+
+            {/* Indicateur des étapes : présentation visuelle */}
+            <section
+              aria-label="Étapes de création du compte"
+              className="mb-5 rounded-xl border border-[#e9ede5] bg-white px-4 py-4 shadow-[0_2px_10px_rgba(24,39,25,0.025)] sm:px-8"
+            >
+              <div className="mx-auto flex max-w-[850px] items-center">
+                {/* Étape 1 */}
+                <div className="flex min-w-0 flex-1 items-center gap-2.5 sm:gap-3">
+                  <div className="flex size-9 shrink-0 items-center justify-center rounded-full bg-[#556B2F] text-xs font-bold text-white shadow-[0_3px_8px_rgba(85,107,47,0.20)]">
+                    1
+                  </div>
+
+                  <div className="min-w-0">
+                    <p className="truncate text-[11px] font-bold text-[#26344a] sm:text-xs">
+                      Informations générales
+                    </p>
+                    <p className="mt-1 hidden text-[10px] text-[#8792a5] sm:block">
+                      Données de l'utilisateur
+                    </p>
+                  </div>
+                </div>
+
+                <div className="mx-3 h-px min-w-3 flex-1 border-t border-dashed border-[#d7decd] sm:mx-5" />
+
+                {/* Étape 2 */}
+                <div className="flex min-w-0 flex-1 items-center gap-2.5 sm:gap-3">
+                  <div className="flex size-9 shrink-0 items-center justify-center rounded-full border border-[#e4e8ed] bg-[#f5f6f8] text-xs font-bold text-[#7b8799]">
+                    2
+                  </div>
+
+                  <div className="min-w-0">
+                    <p className="truncate text-[11px] font-semibold text-[#59667a] sm:text-xs">
+                      Vérification
+                    </p>
+                    <p className="mt-1 hidden text-[10px] text-[#9aa4b3] sm:block">
+                      Contrôle des informations
+                    </p>
+                  </div>
+                </div>
+
+                <div className="mx-3 h-px min-w-3 flex-1 border-t border-dashed border-[#d7decd] sm:mx-5" />
+
+                {/* Étape 3 */}
+                <div className="flex min-w-0 flex-1 items-center gap-2.5 sm:gap-3">
+                  <div className="flex size-9 shrink-0 items-center justify-center rounded-full border border-[#e4e8ed] bg-[#f5f6f8] text-xs font-bold text-[#7b8799]">
+                    3
+                  </div>
+
+                  <div className="min-w-0">
+                    <p className="truncate text-[11px] font-semibold text-[#59667a] sm:text-xs">
+                      Enregistrement
+                    </p>
+                    <p className="mt-1 hidden text-[10px] text-[#9aa4b3] sm:block">
+                      Ajout de l'utilisateur
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            {/* Formulaire */}
+            <form
+              onSubmit={handleSubmit}
+              noValidate
+              className="pb-6"
+            >
+              <div className="overflow-hidden rounded-xl border border-[#e3e9df] bg-white shadow-[0_4px_18px_rgba(25,39,25,0.035)]">
+                {/* En-tête de la carte */}
+                <div className="flex items-center gap-3.5 border-b border-[#edf0ea] px-5 py-4 sm:px-7 sm:py-5">
+                  <div className="flex size-11 shrink-0 items-center justify-center rounded-xl border border-[#e3ead9] bg-[#f1f5e9] text-[#556B2F]">
+                    <UserRound
+                      className="size-5"
+                      strokeWidth={1.9}
+                    />
+                  </div>
+
+                  <div className="min-w-0 flex-1">
+                    <h2 className="text-[15px] font-bold tracking-tight text-[#172033] sm:text-base">
+                      Informations générales
+                    </h2>
+                    <p className="mt-1 text-xs leading-5 text-[#7a879b]">
+                      Saisissez les informations du compte
+                      utilisateur.
+                    </p>
+                  </div>
+
+                  <span className="hidden shrink-0 items-center gap-1 rounded-md border border-[#f9e4e4] bg-[#fff5f4] px-2.5 py-1.5 text-[10px] font-medium text-[#bd4242] sm:inline-flex">
+                    <span className="font-bold">*</span>
+                    Champs obligatoires
                   </span>
                 </div>
 
-                <p className="max-w-xl text-sm leading-6 text-slate-500">
-                  Gérez les informations de connexion et le statut du compte
-                  utilisateur.
-                </p>
-              </div>
-            </div>
-
-            <Button
-              type="button"
-              variant="outline"
-              onClick={handleCancel}
-              className="h-10 shrink-0 gap-2 rounded-lg border border-[#DCE8CF] bg-[#F4F8EF] px-4 text-sm font-medium text-[#556B2F] shadow-sm hover:bg-[#EAF2E0] sm:self-center"
-            >
-              <ArrowLeft className="size-4" />
-              Retour à la liste
-            </Button>
-          </div>
-        </div>
-
-        {/* Formulaire */}
-        <form onSubmit={handleSubmit} className="pb-8">
-          <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
-            <div className="flex items-center gap-3 border-b border-slate-100 px-5 py-5 sm:px-7">
-              <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-[#f2f6ed]">
-                <UserRound className="size-5 text-[#556B2F]" />
-              </div>
-
-              <div>
-                <h2 className="text-base font-bold text-slate-900">
-                  Informations du compte
-                </h2>
-                <p className="mt-1 text-xs text-slate-500">
-                  Complétez les champs obligatoires signalés par un astérisque.
-                </p>
-              </div>
-            </div>
-
-            <div className="space-y-7 p-5 sm:p-7">
-              {/* Identité */}
-              <section>
-                <div className="mb-5 flex items-center gap-2">
-                  <User className="size-4 text-[#556B2F]" />
-                  <h3 className="text-sm font-bold text-slate-800">
-                    Identité
-                  </h3>
-                </div>
-
-                <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
-                  <div>
-                    <label htmlFor="displayName" className={labelClassName}>
-                      Nom complet <span className="text-red-500">*</span>
-                    </label>
-                    <div className="relative">
-                      <User className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-400" />
-                      <input
-                        id="displayName"
-                        name="displayName"
-                        value={formData.displayName}
-                        onChange={handleChange}
-                        placeholder="Ex. Ayah Ben Ali"
-                        autoComplete="name"
-                        required
-                        className={inputClassName}
-                      />
+                <div className="px-5 py-5 sm:px-7 sm:py-6">
+                  {/* Identité */}
+                  <section>
+                    <div className="mb-4 flex items-center gap-2.5">
+                      <UserRound className="size-[17px] text-[#617b3d]" />
+                      <h3 className="text-[13px] font-bold text-[#25334a]">
+                        Identité
+                      </h3>
                     </div>
-                  </div>
 
-                  <div>
-                    <label htmlFor="userName" className={labelClassName}>
-                      Nom d'utilisateur <span className="text-red-500">*</span>
-                    </label>
-                    <div className="relative">
-                      <UserRound className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-400" />
-                      <input
-                        id="userName"
-                        name="userName"
-                        value={formData.userName}
-                        onChange={handleChange}
-                        placeholder="Ex. ayah"
-                        autoComplete="username"
-                        required
-                        className={inputClassName}
-                      />
+                    <div className="grid grid-cols-1 gap-x-5 gap-y-5 md:grid-cols-2">
+                      {/* Nom complet */}
+                      <div className="min-w-0">
+                        <label
+                          htmlFor="displayName"
+                          className={labelClassName}
+                        >
+                          Nom complet {requiredMark}
+                        </label>
+
+                        <div className="relative">
+                          <UserRound className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-[#8b9bb1]" />
+
+                          <input
+                            id="displayName"
+                            name="displayName"
+                            type="text"
+                            value={formData.displayName}
+                            onChange={handleChange}
+                            placeholder="Ex. Ayah Ben Ali"
+                            autoComplete="name"
+                            required
+                            className={inputClassName}
+                          />
+                        </div>
+                      </div>
+
+                      {/* Nom d'utilisateur */}
+                      <div className="min-w-0">
+                        <label
+                          htmlFor="userName"
+                          className={labelClassName}
+                        >
+                          Nom d'utilisateur {requiredMark}
+                        </label>
+
+                        <div className="relative">
+                          <UserRound className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-[#8b9bb1]" />
+
+                          <input
+                            id="userName"
+                            name="userName"
+                            type="text"
+                            value={formData.userName}
+                            onChange={handleChange}
+                            placeholder="Ex. ayah"
+                            autoComplete="username"
+                            required
+                            className={inputClassName}
+                          />
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                </div>
-              </section>
+                  </section>
 
-              <div className="border-t border-slate-100" />
+                  <div className="my-6 border-t border-[#edf0ea]" />
 
-              {/* Coordonnées */}
-              <section>
-                <div className="mb-5 flex items-center gap-2">
-                  <Mail className="size-4 text-[#556B2F]" />
-                  <h3 className="text-sm font-bold text-slate-800">
-                    Coordonnées
-                  </h3>
-                </div>
-
-                <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
-                  <div>
-                    <label htmlFor="mail" className={labelClassName}>
-                      Adresse e-mail <span className="text-red-500">*</span>
-                    </label>
-                    <div className="relative">
-                      <Mail className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-400" />
-                      <input
-                        id="mail"
-                        name="mail"
-                        type="email"
-                        value={formData.mail}
-                        onChange={handleChange}
-                        placeholder="nom@exemple.com"
-                        autoComplete="email"
-                        required
-                        className={inputClassName}
-                      />
+                  {/* Coordonnées */}
+                  <section>
+                    <div className="mb-4 flex items-center gap-2.5">
+                      <Mail className="size-[17px] text-[#617b3d]" />
+                      <h3 className="text-[13px] font-bold text-[#25334a]">
+                        Coordonnées
+                      </h3>
                     </div>
-                  </div>
 
-                  <div>
-                    <label htmlFor="userCode" className={labelClassName}>
-                      Code utilisateur <span className="text-red-500">*</span>
-                    </label>
-                    <div className="relative">
-                      <Hash className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-400" />
-                      <input
-                        id="userCode"
-                        name="userCode"
-                        value={formData.userCode}
-                        onChange={handleChange}
-                        placeholder="Ex. U013"
-                        required
-                        className={inputClassName}
-                      />
+                    <div className="grid grid-cols-1 gap-x-5 gap-y-5 md:grid-cols-2">
+                      {/* Adresse e-mail */}
+                      <div className="min-w-0">
+                        <label
+                          htmlFor="mail"
+                          className={labelClassName}
+                        >
+                          Adresse e-mail {requiredMark}
+                        </label>
+
+                        <div className="relative">
+                          <Mail className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-[#8b9bb1]" />
+
+                          <input
+                            id="mail"
+                            name="mail"
+                            type="email"
+                            value={formData.mail}
+                            onChange={handleChange}
+                            placeholder="nom@exemple.com"
+                            autoComplete="email"
+                            required
+                            className={inputClassName}
+                          />
+                        </div>
+                      </div>
+
+                      {/* Code utilisateur */}
+                      <div className="min-w-0">
+                        <label
+                          htmlFor="userCode"
+                          className={labelClassName}
+                        >
+                          Code utilisateur {requiredMark}
+                        </label>
+
+                        <div className="relative">
+                          <Hash className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-[#8b9bb1]" />
+
+                          <input
+                            id="userCode"
+                            name="userCode"
+                            type="text"
+                            value={formData.userCode}
+                            onChange={handleChange}
+                            placeholder="Ex. U013"
+                            required
+                            className={inputClassName}
+                          />
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                </div>
-              </section>
+                  </section>
 
-              <div className="border-t border-slate-100" />
+                  <div className="my-6 border-t border-[#edf0ea]" />
 
-              {/* Sécurité et statut */}
-              <section>
-                <div className="mb-5 flex items-center gap-2">
-                  <ShieldCheck className="size-4 text-[#556B2F]" />
-                  <h3 className="text-sm font-bold text-slate-800">
-                    Sécurité et statut
-                  </h3>
-                </div>
+                  {/* Sécurité et statut */}
+                  <section>
+                    <div className="mb-4 flex items-center gap-2.5">
+                      <ShieldCheck className="size-[17px] text-[#617b3d]" />
+                      <h3 className="text-[13px] font-bold text-[#25334a]">
+                        Sécurité et statut
+                      </h3>
+                    </div>
 
-                <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
-                  <div>
-                    <label htmlFor="password" className={labelClassName}>
-                      Mot de passe{' '}
-                      {!isEdit && <span className="text-red-500">*</span>}
-                    </label>
+                    <div className="grid grid-cols-1 gap-x-5 gap-y-5 md:grid-cols-2">
+                      {/* Mot de passe */}
+                      <div className="min-w-0">
+                        <label
+                          htmlFor="password"
+                          className={labelClassName}
+                        >
+                          Mot de passe{" "}
+                          {!isEdit && requiredMark}
+                        </label>
 
-                    <div className="relative">
-                      <Lock className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-400" />
-                      <input
-                        id="password"
-                        name="password"
-                        type={showPassword ? 'text' : 'password'}
-                        value={formData.password}
-                        onChange={handleChange}
-                        placeholder={
-                          isEdit
-                            ? 'Laisser vide pour conserver le mot de passe'
-                            : 'Saisissez un mot de passe'
-                        }
-                        autoComplete="new-password"
-                        required={!isEdit}
-                        className={`${inputClassName} pr-11`}
-                      />
+                        <div className="relative">
+                          <Lock className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-[#8b9bb1]" />
+
+                          <input
+                            id="password"
+                            name="password"
+                            type={showPassword ? "text" : "password"}
+                            value={formData.password}
+                            onChange={handleChange}
+                            placeholder={
+                              isEdit
+                                ? "Conserver le mot de passe actuel"
+                                : "Saisissez un mot de passe"
+                            }
+                            autoComplete="new-password"
+                            required={!isEdit}
+                            className={`${inputClassName} pr-11`}
+                          />
+
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setShowPassword((value) => !value)
+                            }
+                            aria-label={
+                              showPassword
+                                ? "Masquer le mot de passe"
+                                : "Afficher le mot de passe"
+                            }
+                            className="absolute right-3.5 top-1/2 -translate-y-1/2 rounded-md p-1 text-[#8b9bb1] transition hover:bg-[#f3f5ef] hover:text-[#556B2F]"
+                          >
+                            {showPassword ? (
+                              <EyeOff className="size-4" />
+                            ) : (
+                              <Eye className="size-4" />
+                            )}
+                          </button>
+                        </div>
+
+                        <p className="mt-2 text-[11px] leading-5 text-[#8b96a7]">
+                          {isEdit
+                            ? "Laissez vide pour conserver le mot de passe actuel."
+                            : "Choisissez un mot de passe sécurisé."}
+                        </p>
+                      </div>
+
+                      {/* Statut du compte */}
+                      <div className="min-w-0">
+                        <label className={labelClassName}>
+                          Statut du compte
+                        </label>
+
+                        <button
+                          type="button"
+                          role="switch"
+                          aria-checked={formData.isActive}
+                          onClick={handleToggleStatus}
+                          className={`flex min-h-[46px] w-full items-center justify-between rounded-lg border px-3.5 transition-all duration-200 ${
+                            formData.isActive
+                              ? "border-[#dce7d0] bg-[#f8faf5]"
+                              : "border-[#e2e6eb] bg-[#f8f9fb]"
+                          }`}
+                        >
+                          <span className="flex min-w-0 items-center gap-2.5">
+                            <span
+                              className={`size-2 rounded-full ${
+                                formData.isActive
+                                  ? "bg-[#668443]"
+                                  : "bg-slate-400"
+                              }`}
+                            />
+
+                            <span className="text-[12px] font-semibold text-[#344155]">
+                              {formData.isActive
+                                ? "Compte actif"
+                                : "Compte inactif"}
+                            </span>
+                          </span>
+
+                          <span
+                            className={`relative inline-flex h-[22px] w-10 shrink-0 items-center rounded-full transition-colors duration-200 ${
+                              formData.isActive
+                                ? "bg-[#556B2F]"
+                                : "bg-[#cbd2dc]"
+                            }`}
+                          >
+                            <span
+                              className={`size-[18px] rounded-full bg-white shadow-sm transition-transform duration-200 ${
+                                formData.isActive
+                                  ? "translate-x-[19px]"
+                                  : "translate-x-0.5"
+                              }`}
+                            />
+                          </span>
+                        </button>
+
+                        <p className="mt-2 text-[11px] leading-5 text-[#8b96a7]">
+                          {formData.isActive
+                            ? "L'utilisateur pourra accéder à son compte."
+                            : "L'accès au compte sera désactivé."}
+                        </p>
+                      </div>
+                    </div>
+                  </section>
+
+                  {/* Erreur */}
+                  {errorMessage && (
+                    <div
+                      role="alert"
+                      className="mt-6 flex items-start gap-3 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
+                    >
+                      <ShieldCheck className="mt-0.5 size-4 shrink-0" />
+
+                      <p className="min-w-0 flex-1 break-words leading-5">
+                        {errorMessage}
+                      </p>
 
                       <button
                         type="button"
-                        onClick={() => setShowPassword((value) => !value)}
-                        aria-label={
-                          showPassword
-                            ? 'Masquer le mot de passe'
-                            : 'Afficher le mot de passe'
-                        }
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 transition hover:text-[#556B2F]"
+                        onClick={() => setErrorMessage("")}
+                        aria-label="Fermer le message d'erreur"
+                        className="rounded-md p-1 transition hover:bg-red-100"
                       >
-                        {showPassword ? (
-                          <EyeOff className="size-4" />
-                        ) : (
-                          <Eye className="size-4" />
-                        )}
+                        <X className="size-4" />
                       </button>
                     </div>
-
-                    <p className="mt-2 text-xs text-slate-400">
-                      {isEdit
-                        ? 'En modification, un mot de passe vide sera omis de la requête.'
-                        : 'Choisissez un mot de passe sécurisé.'}
-                    </p>
-                  </div>
-
-                  <div>
-                    <label className={labelClassName}>Statut du compte</label>
-                    <button
-                      type="button"
-                      role="switch"
-                      aria-checked={formData.isActive}
-                      onClick={handleToggleStatus}
-                      className="flex h-11 w-full items-center justify-between rounded-lg border border-slate-200 px-3 transition hover:border-[#c9d9b6]"
-                    >
-                      <span className="flex items-center gap-2.5">
-                        <span
-                          className={`size-2.5 rounded-full ${
-                            formData.isActive
-                              ? 'bg-emerald-500'
-                              : 'bg-slate-400'
-                          }`}
-                        />
-                        <span className="text-sm font-medium text-slate-700">
-                          {formData.isActive ? 'Compte actif' : 'Compte inactif'}
-                        </span>
-                      </span>
-
-                      <span
-                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition ${
-                          formData.isActive ? 'bg-[#556B2F]' : 'bg-slate-300'
-                        }`}
-                      >
-                        <span
-                          className={`size-5 rounded-full bg-white shadow-sm transition-transform ${
-                            formData.isActive
-                              ? 'translate-x-5'
-                              : 'translate-x-0.5'
-                          }`}
-                        />
-                      </span>
-                    </button>
-
-                    <p className="mt-2 text-xs text-slate-400">
-                      {formData.isActive
-                        ? "L'utilisateur pourra accéder à son compte."
-                        : "L'accès au compte sera désactivé."}
-                    </p>
-                  </div>
+                  )}
                 </div>
-              </section>
 
-              {errorMessage && (
-                <div
-                  role="alert"
-                  className="whitespace-pre-wrap break-words rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
-                >
-                  {errorMessage}
-                </div>
-              )}
-            </div>
+                {/* Barre d'actions */}
+                <footer className="flex flex-col-reverse gap-3 border-t border-[#edf0ea] bg-[#fbfcf9] px-5 py-4 sm:flex-row sm:items-center sm:justify-end sm:px-7">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={handleCancel}
+                    disabled={saving}
+                    className="h-10 gap-2 rounded-lg border-[#dce3eb] bg-white px-5 text-[12px] font-semibold text-[#566378] transition hover:border-[#c8d1dd] hover:bg-[#f6f8fa]"
+                  >
+                   
+                   <span className="text-[13px] font-semibold tracking-[0.015em] text-[#475569] sm:text-sm">
+  Annuler
+</span>
+                  </Button>
 
-            {/* Actions */}
-            <div className="flex flex-col-reverse gap-3 border-t border-slate-100 bg-slate-50/70 px-5 py-4 sm:flex-row sm:justify-end sm:px-7">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={handleCancel}
-                disabled={saving}
-                className="h-10 gap-2 border-slate-200 bg-white px-5"
-              >
-                <X className="size-4" />
-                Annuler
-              </Button>
+                  <Button
+                    type="submit"
+                    disabled={saving}
+                    className="h-10 gap-2 rounded-lg border border-[#4c6128] bg-[#556B2F] px-5 text-[12px] font-semibold text-white shadow-[0_3px_8px_rgba(85,107,47,0.15)] transition hover:bg-[#465a27] disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    {saving ? (
+                      <LoaderCircle className="size-4 animate-spin" />
+                    ) : (
+                      <Check className="size-4" />
+                    )}
 
-              <Button
-                type="submit"
-                disabled={saving}
-                className="h-10 gap-2 bg-[#556B2F] px-5 text-white hover:bg-[#465A27]"
-              >
-                {saving ? (
-                  <LoaderCircle className="size-4 animate-spin" />
-                ) : (
-                  <Check className="size-4" />
-                )}
+                    <span className="text-[13px] font-semibold tracking-[0.01em] sm:text-sm">
+  {saving
+    ? "Enregistrement en cours..."
+    : isEdit
+      ? "Enregistrer les modifications"
+      : "Ajouter l'utilisateur"}
+</span>
 
-                {saving
-                  ? 'Enregistrement...'
-                  : isEdit
-                    ? 'Enregistrer les modifications'
-                    : "Enregistrer l'utilisateur"}
-              </Button>
-            </div>
+                    {!saving && (
+                      <ArrowRight className="ml-1 size-4" />
+                    )}
+                  </Button>
+                </footer>
+              </div>
+            </form>
           </div>
-        </form>
+        </div>
       </Container>
 
       {/* Modale de succès */}
       {showSuccessModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 px-4 backdrop-blur-[2px]">
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-[#142019]/40 px-4 py-6 backdrop-blur-[3px]"
+          onClick={() => setShowSuccessModal(false)}
+        >
           <div
             role="dialog"
             aria-modal="true"
             aria-labelledby="success-title"
-            className="w-full max-w-sm rounded-2xl border border-slate-100 bg-white p-7 text-center shadow-2xl"
+            onClick={(event) => event.stopPropagation()}
+            className="w-full max-w-[390px] overflow-hidden rounded-2xl border border-[#e5eadf] bg-white shadow-[0_25px_80px_rgba(15,23,42,0.20)]"
           >
-            <div className="mx-auto flex size-14 items-center justify-center rounded-full bg-[#eef4e6]">
-              <CheckCircle2 className="size-7 text-[#556B2F]" />
+            <div className="h-1.5 bg-gradient-to-r from-[#81965a] via-[#556B2F] to-[#394b21]" />
+
+            <div className="px-6 pb-6 pt-7 text-center sm:px-8">
+              <div className="mx-auto flex size-14 items-center justify-center rounded-2xl border border-[#e0e9d5] bg-[#f0f5e9] text-[#556B2F]">
+                <CheckCircle2
+                  className="size-7"
+                  strokeWidth={1.8}
+                />
+              </div>
+
+              <h2
+                id="success-title"
+                className="mt-4 text-xl font-bold tracking-tight text-[#172033]"
+              >
+                {isEdit
+                  ? "Utilisateur modifié"
+                  : "Utilisateur ajouté"}
+              </h2>
+
+              <p className="mt-2 text-sm leading-6 text-[#778397]">
+                {isEdit
+                  ? "Les modifications ont été enregistrées avec succès."
+                  : "Le compte utilisateur a été créé avec succès."}
+              </p>
+
+              <div className="mt-5 space-y-3 rounded-xl border border-[#e9ede5] bg-[#fafbf8] p-4 text-left">
+                <div className="flex items-center justify-between gap-3">
+                  <span className="text-xs text-[#8490a0]">
+                    Nom complet
+                  </span>
+                  <span className="max-w-[60%] truncate text-right text-xs font-semibold text-[#26344a]">
+                    {formData.displayName}
+                  </span>
+                </div>
+
+                <div className="border-t border-[#e9ede5]" />
+
+                <div className="flex items-center justify-between gap-3">
+                  <span className="text-xs text-[#8490a0]">
+                    Code utilisateur
+                  </span>
+                  <span className="text-xs font-semibold text-[#26344a]">
+                    {formData.userCode}
+                  </span>
+                </div>
+
+                <div className="border-t border-[#e9ede5]" />
+
+                <div className="flex items-center justify-between gap-3">
+                  <span className="text-xs text-[#8490a0]">
+                    Statut
+                  </span>
+
+                  <span
+                    className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-semibold ${
+                      formData.isActive
+                        ? "bg-[#eef5e7] text-[#4e6a2d]"
+                        : "bg-slate-100 text-slate-600"
+                    }`}
+                  >
+                    <span
+                      className={`size-1.5 rounded-full ${
+                        formData.isActive
+                          ? "bg-[#668443]"
+                          : "bg-slate-400"
+                      }`}
+                    />
+                    {formData.isActive ? "Actif" : "Inactif"}
+                  </span>
+                </div>
+              </div>
+
+              <Button
+                type="button"
+                onClick={handleSuccessOk}
+                className="mt-6 h-11 w-full gap-2 rounded-lg bg-[#556B2F] text-sm font-semibold text-white shadow-sm transition hover:bg-[#465a27]"
+              >
+                Voir les utilisateurs
+                <ChevronRight className="size-4" />
+              </Button>
             </div>
-
-            <h2
-              id="success-title"
-              className="mt-4 text-lg font-bold text-slate-900"
-            >
-              {isEdit ? 'Utilisateur modifié' : 'Utilisateur ajouté'}
-            </h2>
-
-            <p className="mt-2 text-sm leading-6 text-slate-500">
-              {isEdit
-                ? 'Les modifications ont été enregistrées avec succès.'
-                : 'Le compte a été créé avec succès.'}
-            </p>
-
-            <Button
-              type="button"
-              onClick={handleSuccessOk}
-              className="mt-5 h-10 w-full bg-[#556B2F] hover:bg-[#465A27]"
-            >
-              Continuer
-            </Button>
           </div>
         </div>
       )}
     </>
   );
 }
+
+export default AjouterUtilisateurPage;

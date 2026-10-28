@@ -43,20 +43,20 @@ export const MENU_SIDEBAR: MenuConfig = [
         path: '/store-admin/functions',
       },
       {
-        title: 'Départements',
-        icon: Building2,
-        path: '/store-admin/departments',
-      },
+  title: 'Départements',
+  icon: Building2,
+  path: '/store-admin/departements',
+},
       {
         title: 'Citernes',
         icon: Container,
         path: '/store-admin/tanks',
       },
       {
-        title: 'Rubriques',
-        icon: Tags,
-        path: '/store-admin/rubrics',
-      },
+  title: 'Rubriques',
+  icon: Tags,
+  path: '/store-admin/rubrics',
+},
     ],
   },
 
@@ -97,10 +97,10 @@ export const MENU_SIDEBAR: MenuConfig = [
         path: '/store-admin/reception-vouchers',
       },
       {
-        title: 'Traitement des bases',
-        icon: Settings,
-        path: '/store-admin/base-processing',
-      },
+  title: 'Traitement des bases',
+  icon: Settings,
+  path: '/store-admin/traitement-bases',
+},
       {
         title: 'Vente huile',
         icon: ShoppingCart,

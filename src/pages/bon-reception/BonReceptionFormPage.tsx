@@ -2,6 +2,7 @@
 import { useEffect, useRef, useState } from 'react';
 import type React from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { Button } from '@/components/ui/button';
 import {
   ArrowLeft,
   Save,
@@ -10,6 +11,9 @@ import {
   CheckCircle2,
   LoaderCircle,
   FileText,
+  Home,
+  ChevronRight,
+  ClipboardCheck,
 } from 'lucide-react';
 
 const API_BASE_URL = '/olive_app';
@@ -180,6 +184,8 @@ export default function BonReceptionFormPage({
   // Empêche une ancienne réponse de remplacer le résultat de la saisie actuelle.
   const accountRequestRef = useRef(0);
   const phoneToCheckRef = useRef('');
+
+  
 
   const updateField = <K extends keyof ReceptionForm>(
     field: K,
@@ -546,74 +552,86 @@ async function handleSubmit(
       </div>
     );
   }
+  
 
   return (
     <div className="min-h-screen bg-white p-4 md:px-8 md:py-8">
-      <div className="mx-auto max-w-[1600px] space-y-7">
-        {/* En-tête */}
-        <div className="flex flex-col justify-between gap-4 border-b border-slate-200 pb-7 sm:flex-row sm:items-center">
-          <div className="flex items-start gap-4">
-            <div className="flex size-[60px] shrink-0 items-center justify-center rounded-2xl bg-[#eef1e8]">
-              <FileText className="size-7 text-[#556b2f]" />
-            </div>
+      <header className="relative mb-5 overflow-hidden rounded-2xl border border-[#e8ecdf] bg-gradient-to-br from-white via-white to-[#f1f5e9] px-5 py-5 sm:px-7 sm:py-6">
+  <div
+    aria-hidden="true"
+    className="pointer-events-none absolute -right-12 -top-20 size-64 rounded-full border border-[#e3ead8] opacity-60"
+  />
+  <div
+    aria-hidden="true"
+    className="pointer-events-none absolute -right-5 -top-12 size-48 rounded-full border border-[#e3ead8] opacity-60"
+  />
 
-            <div>
-              <h1 className="text-2xl font-bold text-slate-900 md:text-3xl">
-                {isEdit
-                  ? 'Modifier un bon de réception'
-                  : 'Ajouter un bon de réception'}
-              </h1>
+  <div className="relative">
+    {/* Fil d'Ariane */}
+    <nav
+      aria-label="Fil d'Ariane"
+      className="mb-4 flex flex-wrap items-center gap-2 text-[11px] font-medium text-[#87927c]"
+    >
+      <button
+        type="button"
+        onClick={() => navigate("/store-admin")}
+        aria-label="Accueil"
+        className="transition hover:text-[#556B2F]"
+      >
+        <Home className="size-3.5" />
+      </button>
 
-              <p className="mt-2 text-base text-slate-500">
-                {isEdit
-                  ? 'Modifiez les informations du bon sélectionné.'
-                  : 'Créez un bon et renseignez les informations de réception.'}
-              </p>
-            </div>
-          </div>
+      <ChevronRight className="size-3" />
 
-          <button
-            type="button"
-            onClick={() =>
-              navigate('/store-admin/reception-vouchers')
-            }
-            className="inline-flex items-center justify-center gap-2 self-start rounded-xl border border-[#dce5cd] bg-[#f5f7ef] px-5 py-3 text-sm font-medium text-[#556b2f] shadow-sm hover:bg-[#edf1e5] sm:self-center"
-          >
-            <ArrowLeft className="size-4" />
-            Retour à la liste
-          </button>
+      <button
+        type="button"
+        className="transition hover:text-[#556B2F]"
+      >
+        Bons de réception
+      </button>
+
+      <ChevronRight className="size-3" />
+
+      <span className="font-semibold text-[#33412b]">
+        {isEdit
+          ? "Modifier un bon de réception"
+          : "Ajouter un bon de réception"}
+      </span>
+    </nav>
+
+    <div className="flex flex-col justify-between gap-5 sm:flex-row sm:items-center">
+      <div className="flex min-w-0 items-center gap-4 sm:gap-5">
+        {/* Icône alignée avec le titre */}
+        <div className="flex size-[58px] shrink-0 items-center justify-center rounded-2xl border border-[#dfe8d3] bg-gradient-to-br from-[#f5f8ef] to-[#eaf0df] text-[#556B2F] shadow-[0_3px_10px_rgba(85,107,47,0.07)]">
+          <ClipboardCheck
+            className="size-7"
+            strokeWidth={1.9}
+          />
         </div>
 
-        {error && (
-          <div
-            role="alert"
-            className="flex items-start gap-3 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700"
-          >
-            <AlertCircle className="size-5 shrink-0" />
-            <span>{error}</span>
+        {/* Titre et description */}
+        <div className="min-w-0">
+          <div className="flex flex-wrap items-center gap-3">
+            <h1 className="text-[25px] font-bold leading-tight tracking-[-0.035em] text-[#172033] sm:text-[32px]">
+              {isEdit
+                ? "Modifier un bon de réception"
+                : "Ajouter un bon de réception"}
+            </h1>
           </div>
-        )}
 
-        {success && (
-          <div
-            role="status"
-            className="flex items-start gap-3 rounded-xl border border-green-200 bg-green-50 p-4 text-sm text-green-800"
-          >
-            <CheckCircle2 className="size-5 shrink-0" />
-            <div>
-              <p>{success}</p>
-              <button
-                type="button"
-                onClick={() =>
-                  navigate('/store-admin/reception-vouchers')
-                }
-                className="mt-2 font-semibold underline"
-              >
-                Retour à la liste
-              </button>
-            </div>
-          </div>
-        )}
+          <p className="mt-2.5 max-w-2xl text-[14px] font-normal leading-[1.8] tracking-[0.01em] text-[#64748b] sm:text-[15px]">
+            {isEdit
+              ? "Modifiez les informations et les détails du bon de réception."
+              : "Enregistrez un bon de réception et renseignez les informations relatives aux produits réceptionnés."}
+          </p>
+        </div>
+      </div>
+
+      {/* Bouton retour */}
+      
+    </div>
+  </div>
+</header>
 
         <form
           onSubmit={handleSubmit}
@@ -913,73 +931,6 @@ async function handleSubmit(
               </p>
             </section>
 
-            <div className="border-t border-slate-100" />
-
-            {/* Paiement */}
-            <section>
-              <h3 className="mb-5 text-base font-semibold text-slate-900">
-                Paiement
-              </h3>
-
-              <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-                <Field
-                  label="Montant payé"
-                  type="number"
-                  min="0"
-                  step="0.001"
-                  value={form.payement}
-                  onChange={(value) =>
-                    updateField('payement', value)
-                  }
-                />
-
-                <Field
-                  label="Acompte"
-                  type="number"
-                  min="0"
-                  step="0.001"
-                  value={form.acompte}
-                  onChange={(value) =>
-                    updateField('acompte', value)
-                  }
-                />
-
-                <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
-                  <p className="text-sm text-slate-500">
-                    Solde restant
-                  </p>
-
-                  <p
-                    className={`mt-1 text-xl font-bold ${
-                      remainingBalance < 0
-                        ? 'text-red-600'
-                        : 'text-[#556b2f]'
-                    }`}
-                  >
-                    {remainingBalance.toLocaleString('fr-FR', {
-                      minimumFractionDigits: 2,
-                      maximumFractionDigits: 2,
-                    })}
-                  </p>
-                </div>
-
-                <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
-                  <p className="text-sm text-slate-500">
-                    Rendement estimé
-                  </p>
-
-                  <p className="mt-1 text-xl font-bold text-slate-800">
-                    {yieldPercentage.toLocaleString('fr-FR', {
-                      maximumFractionDigits: 2,
-                    })}
-                    %
-                  </p>
-                </div>
-              </div>
-            </section>
-
-            <div className="border-t border-slate-100" />
-
             {/* Observations */}
             <section>
               <h3 className="mb-4 text-base font-semibold text-slate-900">
@@ -987,9 +938,6 @@ async function handleSubmit(
               </h3>
 
               <label className="block">
-                <span className="mb-1.5 block text-sm font-medium text-slate-700">
-                  Commentaire
-                </span>
 
                 <textarea
                   value={form.observation}
@@ -1047,6 +995,6 @@ async function handleSubmit(
           </div>
         </form>
       </div>
-    </div>
+
   );
 }

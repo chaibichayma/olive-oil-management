@@ -278,15 +278,22 @@ const handleEdit = (citerne: Citerne) => {
 
     return (
       <div className="flex h-full items-center gap-3">
-        <span className="font-semibold text-[#334155]">
-          {formatNumber(capacity)} L
-        </span>
-        <span
-          className={`inline-flex w-fit items-center rounded-full border px-2 py-0.5 text-[10px] font-semibold leading-4 whitespace-nowrap ${badgeClass}`}
-        >
-          {capacity <= 0 ? "Capacité nulle" : label}
-        </span>
-      </div>
+  <span className="text-[13px] font-semibold tracking-tight text-slate-800">
+    {formatNumber(capacity)} L
+  </span>
+
+  <span
+    className={`inline-flex w-fit items-center gap-1.5 rounded-md border px-2.5 py-1 text-[11px] font-semibold leading-none tracking-wide whitespace-nowrap shadow-[0_1px_2px_rgba(0,0,0,0.03)] ${badgeClass}`}
+  >
+    <span
+      className={`size-1.5 rounded-full ${
+        capacity <= 0 ? "bg-red-500" : "bg-[#556B2F]"
+      }`}
+    />
+
+    {capacity <= 0 ? "Capacité nulle" : label}
+  </span>
+</div>
     );
   };
 
@@ -532,7 +539,12 @@ const handleEdit = (citerne: Citerne) => {
         {/* Pagination personnalisée */}
         <div className="flex flex-col gap-3 border-t border-[#edf0f2] px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-3 text-xs text-[#64748b]">
-            <label htmlFor="page-size">Lignes par page</label>
+            <label
+  htmlFor="page-size"
+  className="text-[13px] font-semibold tracking-wide text-slate-600"
+>
+  Lignes par page
+</label>
             <select
               id="page-size"
               value={pageSize}
@@ -550,14 +562,14 @@ const handleEdit = (citerne: Citerne) => {
           </div>
 
           <div className="flex items-center justify-between gap-2 sm:justify-end">
-            <span className="mr-1 text-xs text-[#64748b]">
-              {filteredCiternes.length === 0
-                ? "0 résultat"
-                : `${(safePage - 1) * pageSize + 1} à ${Math.min(
-                    safePage * pageSize,
-                    filteredCiternes.length
-                  )} sur ${filteredCiternes.length}`}
-            </span>
+            <span className="mr-2 whitespace-nowrap text-[12px] font-medium tracking-[0.02em] text-[#737D62] sm:text-[13px]">
+  {filteredCiternes.length === 0
+    ? "0 résultat"
+    : `${(safePage - 1) * pageSize + 1} à ${Math.min(
+        safePage * pageSize,
+        filteredCiternes.length
+      )} sur ${filteredCiternes.length}`}
+</span>
 
             <button
               type="button"

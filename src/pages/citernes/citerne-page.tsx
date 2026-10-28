@@ -8,6 +8,7 @@ import {
   RefreshCw,
   Trash2,
   X,
+  Droplet, ChartPie, Warehouse,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -392,16 +393,23 @@ export function CiternePage() {
 
             {/* Titre et action */}
             <div className="flex items-start justify-between gap-4">
-              <div className="min-w-0">
-                <h1 className="text-[26px] font-bold leading-tight tracking-tight text-slate-900 sm:text-[28px]">
-                  Citernes
-                </h1>
+              <div className="flex min-w-0 items-center gap-3">
+  {/* Icône des citernes */}
+  <div className="flex size-13 shrink-0 items-center justify-center rounded-xl bg-[#f0f4e9] text-[#556B2F]">
+  <Warehouse className="size-7" strokeWidth={1.8} />
+</div>
 
-                <p className="mt-0.5 text-xs text-slate-500 sm:text-sm">
-                  Gestion des citernes de stockage d’huile d’olive
-                </p>
-              </div>
+  {/* Titre et description */}
+  <div className="min-w-0">
+    <h1 className="text-[26px] font-bold leading-tight tracking-tight text-slate-900 sm:text-[28px]">
+      Citernes
+    </h1>
 
+    <p className="mt-1 text-[13px] font-medium leading-relaxed tracking-[0.015em] text-slate-500 sm:text-[14px]">
+  Gestion des citernes de stockage d’huile d’olive
+</p>
+  </div>
+</div>
               <Button
                 type="button"
                 onClick={handleAdd}
@@ -413,94 +421,65 @@ export function CiternePage() {
             </div>
 
             {/* Indicateurs horizontaux de capacité */}
-            <section
-              aria-label="Capacité de stockage"
-              className="mt-3 grid grid-cols-1 items-center gap-4 rounded-lg border border-slate-200/80 bg-white px-4 py-4 shadow-sm sm:px-5 md:grid-cols-[0.9fr_1.8fr_0.9fr] md:gap-5 md:px-4 lg:px-5"
-            >
-              {/* Capacité totale */}
-              <div className="flex min-w-0 items-center gap-4">
-                <div className="flex size-11 shrink-0 items-center justify-center rounded-lg bg-[#f0f4e9] text-[#556B2F]">
-                  <Database className="size-6" strokeWidth={1.8} />
-                </div>
+<section
+  aria-label="Capacité de stockage"
+  className="mt-3 grid grid-cols-1 items-center gap-3 rounded-lg border border-slate-200/70 bg-white px-3 py-2 shadow-sm sm:grid-cols-3 sm:gap-0"
+>
+  {/* Capacité totale */}
+  <div className="flex min-w-0 items-center gap-3 sm:pr-4">
+    <div className="flex size-11 shrink-0 items-center justify-center rounded-lg bg-[#f0f4e9] text-[#556B2F]">
+      <Database className="size-5" strokeWidth={1.8} />
+    </div>
 
-                <div className="min-w-0">
-                  <p className="text-[11px] font-medium text-slate-500 sm:text-xs">
-                    Capacité totale
-                  </p>
+    <div className="min-w-0">
+      <p className="text-[11px] font-medium leading-4 text-slate-500">
+        Capacité totale
+      </p>
 
-                  <p className="mt-0.5 text-xl font-bold leading-tight tracking-tight text-slate-900 sm:text-[22px]">
-                    {formatLiters(statistics.totalCapacity)}
-                  </p>
-                </div>
-              </div>
+      <p className="text-lg font-bold leading-5 tracking-tight text-slate-900">
+        {formatLiters(statistics.totalCapacity)}
+      </p>
+    </div>
+  </div>
 
-              {/* Capacité utilisée et progression */}
-              <div className="min-w-0 border-y border-slate-100 py-3 md:border-y-0 md:border-x md:px-5 md:py-0">
-                <div className="mb-1.5 flex items-end justify-between gap-3">
-                  <div className="min-w-0">
-                    <p className="text-[11px] font-medium text-slate-500 sm:text-xs">
-                      Capacité utilisée
-                    </p>
+  {/* Capacité utilisée */}
+  <div className="flex min-w-0 items-center gap-3 border-y border-slate-100 py-2 sm:border-y-0 sm:border-x sm:px-4 sm:py-0">
+    <div className="flex size-11 shrink-0 items-center justify-center rounded-lg bg-[#fff6e6] text-[#a66b08]">
+      <Droplet className="size-5" strokeWidth={1.8} />
+    </div>
 
-                    <p className="mt-0.5 text-xl font-bold leading-tight tracking-tight text-slate-900 sm:text-[22px]">
-                      {statistics.usedCapacity === null
-                        ? "—"
-                        : formatLiters(statistics.usedCapacity)}
-                    </p>
-                  </div>
+    <div className="min-w-0">
+      <p className="text-[11px] font-medium leading-4 text-slate-500">
+        Capacité utilisée
+      </p>
 
-                  <span className="mb-0.5 shrink-0 text-[11px] font-medium text-slate-500">
-                    {statistics.usedCapacity === null
-                      ? "—"
-                      : `${statistics.usagePercentage}%`}
-                  </span>
-                </div>
+      <p className="text-lg font-bold leading-5 tracking-tight text-slate-900">
+        {statistics.usedCapacity === null
+          ? "—"
+          : formatLiters(statistics.usedCapacity)}
+      </p>
+    </div>
+  </div>
 
-                <div
-                  className="h-2 w-full overflow-hidden rounded-full bg-slate-100"
-                  role="progressbar"
-                  aria-label="Taux d'utilisation"
-                  aria-valuemin={0}
-                  aria-valuemax={100}
-                  aria-valuenow={
-                    statistics.usedCapacity === null
-                      ? 0
-                      : statistics.usagePercentage
-                  }
-                >
-                  <div
-                    className="h-full rounded-full bg-[#556B2F] transition-[width] duration-300"
-                    style={{
-                      width:
-                        statistics.usedCapacity === null
-                          ? "0%"
-                          : `${statistics.usagePercentage}%`,
-                    }}
-                  />
-                </div>
-              </div>
+  {/* Capacité disponible */}
+  <div className="flex min-w-0 items-center gap-3 sm:pl-4">
+    <div className="flex size-11 shrink-0 items-center justify-center rounded-lg bg-[#f0f4e9] text-[#556B2F]">
+      <ChartPie className="size-5" strokeWidth={1.8} />
+    </div>
 
-              {/* Capacité disponible */}
-              <div className="min-w-0 md:pl-1">
-                <p className="text-[11px] font-medium text-slate-500 sm:text-xs">
-                  Capacité disponible
-                </p>
+    <div className="min-w-0">
+      <p className="text-[11px] font-medium leading-4 text-slate-500">
+        Capacité disponible
+      </p>
 
-                <div className="mt-0.5 flex flex-wrap items-baseline gap-3">
-                  <p className="text-xl font-bold leading-tight tracking-tight text-slate-900 sm:text-[22px]">
-                    {statistics.availableCapacity === null
-                      ? "—"
-                      : formatLiters(statistics.availableCapacity)}
-                  </p>
-
-                  <span className="text-[11px] font-medium text-slate-500">
-                    {statistics.availableCapacity === null
-                      ? "—"
-                      : `${100 - statistics.usagePercentage}%`}
-                  </span>
-                </div>
-              </div>
-            </section>
+      <p className="text-lg font-bold leading-5 tracking-tight text-slate-900">
+        {statistics.availableCapacity === null
+          ? "—"
+          : formatLiters(statistics.availableCapacity)}
+      </p>
+    </div>
+  </div>
+</section>
           </header>
         </div>
       </Container>
